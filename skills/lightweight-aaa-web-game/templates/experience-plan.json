@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "player": "第一次接触本游戏的桌面键鼠玩家",
+  "deviceAndContext": "明确 GPU、屏幕、输入方式及单局时长；未知项保留未知",
+  "coreLoop": "REPLACE_WITH_PLAYER_GOAL_AND_ACTIONS",
+  "constraints": {
+    "singleHtml": true,
+    "extraNetworkRequestsMax": 0,
+    "referenceQuality": "达到约定参考锚点，不能通过降低目标关闭问题"
+  },
+  "goals": [
+    {
+      "id": "first_session",
+      "playerQuestion": "填写玩家此时想知道的事情",
+      "target": "填写设计目标，不冒充实测结果",
+      "verificationMethod": "明确操作记录、画面评审或真人反馈",
+      "status": "unverified"
+    },
+    {
+      "id": "action_clarity",
+      "playerQuestion": "填写玩家此时想知道的事情",
+      "target": "填写设计目标，不冒充实测结果",
+      "verificationMethod": "明确操作记录、画面评审或真人反馈",
+      "status": "unverified"
+    },
+    {
+      "id": "navigation",
+      "playerQuestion": "填写玩家此时想知道的事情",
+      "target": "填写设计目标，不冒充实测结果",
+      "verificationMethod": "明确操作记录、画面评审或真人反馈",
+      "status": "unverified"
+    },
+    {
+      "id": "recovery",
+      "playerQuestion": "填写玩家此时想知道的事情",
+      "target": "填写设计目标，不冒充实测结果",
+      "verificationMethod": "明确操作记录、画面评审或真人反馈",
+      "status": "unverified"
+    },
+    {
+      "id": "comfort",
+      "playerQuestion": "填写玩家此时想知道的事情",
+      "target": "填写设计目标，不冒充实测结果",
+      "verificationMethod": "明确操作记录、画面评审或真人反馈",
+      "status": "unverified"
+    }
+  ],
+  "referenceAnchors": [
+    {
+      "id": "weapon_and_action",
+      "playerValue": "",
+      "visibleFeatures": [],
+      "referenceEvidence": [],
+      "acceptanceView": ""
+    },
+    {
+      "id": "materials_and_wetness",
+      "playerValue": "",
+      "visibleFeatures": [],
+      "referenceEvidence": [],
+      "acceptanceView": ""
+    },
+    {
+      "id": "contact_lighting",
+      "playerValue": "",
+      "visibleFeatures": [],
+      "referenceEvidence": [],
+      "acceptanceView": ""
+    },
+    {
+      "id": "scene_readability",
+      "playerValue": "",
+      "visibleFeatures": [],
+      "referenceEvidence": [],
+      "acceptanceView": ""
+    }
+  ],
+  "feedbackSources": []
+}

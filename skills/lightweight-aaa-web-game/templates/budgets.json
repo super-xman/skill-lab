@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 2,
+  "profile": "desktop-medium",
+  "rawBytesMax": 2097152,
+  "gzipBytesMax": 716800,
+  "viewport": {"width": 1280, "height": 720},
+  "quality": "medium",
+  "seed": 4207,
+  "requiredScenes": ["overview", "materials", "combat", "interior"],
+  "benchmarkScene": "combat",
+  "benchmarkMinEnemies": 3,
+  "benchmarkMinEffects": 1,
+  "internalResolutionMinScale": 0.8,
+  "warmupSeconds": 3,
+  "sampleSeconds": 10,
+  "minFrameSamples": 60,
+  "fpsMin": 55,
+  "p95FrameMsMax": 25,
+  "p99FrameMsMax": 50,
+  "bootMsMax": 8000,
+  "drawCallsMax": 600,
+  "submittedTrianglesMax": 3500000,
+  "visualScoreMin": 4,
+  "requiredMotionReviews": ["primary_action", "reload", "hit_and_damage", "restart_and_quality"],
+  "requiredExperienceGoals": ["first_session", "action_clarity", "navigation", "recovery", "comfort"],
+  "feedbackRules": {
+    "requiredChannels": ["muzzle", "tracer"],
+    "minAcceptedShots": 100,
+    "minPresentedFrames": 2,
+    "maxFirstFrameDelay": 1
+  },
+  "stabilityTargets": {
+    "independentColdStarts": 3,
+    "restartCycles": 5,
+    "sustainedCombatSeconds": 60,
+    "soakWallSeconds": 300,
+    "testFrameCaps": [60, 30, 15],
+    "effectPoolReuseFactor": 3,
+    "postWarmupGpuResourceGrowthMax": 0
+  },
+  "requiredGameplayChecks": [
+    "movement_collision", "primary_action_hit_and_occlusion", "enemy_response",
+    "objective_progression", "win_and_restart", "loss_and_restart", "pause_resume",
+    "audio_unlock_and_feedback", "quality_fallback",
+    "primary_action_visual_feedback", "sustained_fire_and_pool_reuse",
+    "input_lifecycle", "restart_stress", "cold_start_repetition", "sustained_play"
+  ]
+}

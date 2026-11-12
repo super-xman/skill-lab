@@ -1,0 +1,132 @@
+{
+  "reportSha256": "REPLACE_WITH_REPORT_FILE_SHA256",
+  "reviewer": "REPLACE_WITH_REVIEWER_AND_IMAGE_VIEWING_METHOD",
+  "artDirectionMatch": false,
+  "criticalDefects": [],
+  "scenes": [
+    {
+      "id": "overview",
+      "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
+      "scores": {
+        "composition": 0,
+        "materials": 0,
+        "lighting": 0,
+        "readability": 0,
+        "artifactFree": 0
+      },
+      "evidence": "Describe visible evidence; do not fill without opening the screenshot.",
+      "issues": []
+    },
+    {
+      "id": "materials",
+      "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
+      "scores": {
+        "composition": 0,
+        "materials": 0,
+        "lighting": 0,
+        "readability": 0,
+        "artifactFree": 0
+      },
+      "evidence": "",
+      "issues": []
+    },
+    {
+      "id": "combat",
+      "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
+      "scores": {
+        "composition": 0,
+        "materials": 0,
+        "lighting": 0,
+        "readability": 0,
+        "artifactFree": 0
+      },
+      "evidence": "",
+      "issues": []
+    },
+    {
+      "id": "interior",
+      "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
+      "scores": {
+        "composition": 0,
+        "materials": 0,
+        "lighting": 0,
+        "readability": 0,
+        "artifactFree": 0
+      },
+      "evidence": "",
+      "issues": []
+    }
+  ],
+  "motionScenes": [
+    {
+      "id": "primary_action",
+      "captureSha256": [],
+      "visibleFeedback": false,
+      "timingAndContinuity": false,
+      "noBlockingArtifacts": false,
+      "evidence": ""
+    },
+    {
+      "id": "reload",
+      "captureSha256": [],
+      "visibleFeedback": false,
+      "timingAndContinuity": false,
+      "noBlockingArtifacts": false,
+      "evidence": ""
+    },
+    {
+      "id": "hit_and_damage",
+      "captureSha256": [],
+      "visibleFeedback": false,
+      "timingAndContinuity": false,
+      "noBlockingArtifacts": false,
+      "evidence": ""
+    },
+    {
+      "id": "restart_and_quality",
+      "captureSha256": [],
+      "visibleFeedback": false,
+      "timingAndContinuity": false,
+      "noBlockingArtifacts": false,
+      "evidence": ""
+    }
+  ],
+  "experience": {
+    "artifactSha256": "REPLACE_WITH_GAME_SHA256",
+    "basis": "agent_playtest",
+    "normalEntryPlayed": false,
+    "goals": [
+      {
+        "id": "first_session",
+        "status": "unverified",
+        "observation": "",
+        "evidence": []
+      },
+      {
+        "id": "action_clarity",
+        "status": "unverified",
+        "observation": "",
+        "evidence": []
+      },
+      {
+        "id": "navigation",
+        "status": "unverified",
+        "observation": "",
+        "evidence": []
+      },
+      {
+        "id": "recovery",
+        "status": "unverified",
+        "observation": "",
+        "evidence": []
+      },
+      {
+        "id": "comfort",
+        "status": "unverified",
+        "observation": "",
+        "evidence": []
+      }
+    ],
+    "issues": []
+  }
+}

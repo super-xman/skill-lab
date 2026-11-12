@@ -1,0 +1,70 @@
+{
+  "purpose": "Validation of this Skill and its tools, not full certification of the reference game",
+  "pythonAcceptanceTests": {
+    "passed": 7,
+    "failed": 0
+  },
+  "javascriptResourceAuditAssertions": {
+    "passed": 7,
+    "failed": 0
+  },
+  "negativeBrowserFixture": {
+    "expected": "failed",
+    "actual": "failed",
+    "startupFailureDetected": true,
+    "externalRequestDetected": true
+  },
+  "referenceSmokeTest": {
+    "artifactName": "几猫国产3A大作_V1.html",
+    "artifactSha256": "9e55b5200b088adaf8e1152da04efc0d3b25e236e6baf2dee96f81e23e084966",
+    "rawBytes": 1425707,
+    "gzipBytes": 445935,
+    "validatorSha256": "ffb1ade260fcaadbafb8a8abdace0dea1c4fe56fff75479fc6c393ce57d5e7eb",
+    "reportSha256": "73d4fe2c073fa638eb6f15676cf26b9d78210e8dec8fb1d0bfdbfff3a5357745",
+    "automatedStatus": "unverified",
+    "gateCounts": {
+      "passed": 9,
+      "failed": 0,
+      "unverified": 20
+    },
+    "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "externalResources": 0,
+    "runtimeErrors": 0,
+    "screenshotInspected": true,
+    "visualObservation": "Overview shows the port, container structures, wet-ground reflections, near weapon and legible task/ammo HUD. This one view is not a full four-view visual review.",
+    "limitations": [
+      "Software GPU; hardware performance unverified",
+      "Reference has no standard diagnostics or gameplay scenario script; full audit and gameplay remain unverified"
+    ]
+  },
+  "packageChecks": [
+    "Skill YAML frontmatter parsed",
+    "All relative documentation links resolve",
+    "JSON templates parsed",
+    "Python and JavaScript scripts exercised"
+  ],
+  "independentTrial": {
+    "name": "BREAKWATER / 防波堤",
+    "artifactSha256": "24b61f451cd6be67aa6e3e7340220d2629488c2098f7bbd434ef0cd550586965",
+    "rawBytes": 774926,
+    "gzipBytes": 206095,
+    "gzipLevel": 9,
+    "reportSha256": "fcc60da547449ba370dbd20e57f7cffdb9252cf4752f06169bb8bcd5bcba64b8",
+    "gateCounts": {
+      "passed": 30,
+      "unverified": 2
+    },
+    "gameplayChecksPassed": 9,
+    "visualScenesInspected": 4,
+    "visualTargetMet": false,
+    "hardwarePerformanceVerified": false,
+    "conclusion": "技术路线和可玩闭环成立，视觉未达到参考作品。详见 trial-findings.md 与游戏交付报告。"
+  },
+  "syntaxErrorFastFail": {
+    "expected": "failed",
+    "actual": "failed",
+    "validatorSha256": "0416715a41ed4bffd7d3aec2f0df950c01811aa1ca43559eb85422b61dc4d58d",
+    "reportSha256": "dd4ec7dd9976370ed3b571308261688bdf524b6afd6162bb8127047ab80d043e",
+    "bootMs": 146.4
+  }
+}

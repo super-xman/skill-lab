@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 2,
+  "currentArtifactSha256": "REPLACE_WITH_GAME_SHA256",
+  "issues": [
+    {
+      "id": "EXAMPLE-ONLY-remove-before-use",
+      "source": "user_feedback | agent_playtest | measured",
+      "report": "原话或观察事实，不把原因猜测写成事实",
+      "priority": "P1",
+      "status": "open",
+      "playerContext": "",
+      "playerImpact": "",
+      "hypothesis": "",
+      "reproductionSteps": [],
+      "proposedChange": "",
+      "successMetric": {
+        "name": "例如 missingFeedback / acceptedShots",
+        "target": 0,
+        "before": null,
+        "after": null
+      },
+      "beforeEvidence": [],
+      "afterEvidence": [],
+      "regressionEvidence": [],
+      "verifiedArtifactSha256": "",
+      "playerOutcome": "",
+      "reusableRule": ""
+    }
+  ],
+  "iterations": [],
+  "nextSuggestions": []
+}

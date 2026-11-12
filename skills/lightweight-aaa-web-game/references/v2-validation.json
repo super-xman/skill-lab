@@ -1,0 +1,100 @@
+{
+  "version": "2.0.0",
+  "purpose": "Validation of the Skill tools and anti-false-pass gates; not certification or repair of the game",
+  "unitTests": {
+    "legacyPassed": 7,
+    "v2Passed": 27,
+    "failed": 0
+  },
+  "realBrowserNetworkFixtures": {
+    "passed": 11,
+    "failed": 0,
+    "reportSha256": "2265adaa0e375f9056ed723c731eb5042d2c52003ba8a55f713f600b9cd5859a",
+    "cases": [
+      {
+        "case": "inline_and_data_blob",
+        "expected": "passed",
+        "actual": "passed"
+      },
+      {
+        "case": "fetch_after_input",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "same_entry_fetch",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "same_entry_iframe",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "beacon_ignored",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "worker_nested_fetch",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "service_worker_blocked",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "websocket_blocked",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "dynamic_css",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "dynamic_preconnect",
+        "expected": "failed",
+        "actual": "failed"
+      },
+      {
+        "case": "csp_blocked_fetch",
+        "expected": "failed",
+        "actual": "failed"
+      }
+    ]
+  },
+  "gameIntegrationSmoke": {
+    "artifactSha256": "24b61f451cd6be67aa6e3e7340220d2629488c2098f7bbd434ef0cd550586965",
+    "validatorSha256": "4395b77f4267ba6bc045e59c80e4b17a57fd7ff4cbbfd9be68c1129044982061",
+    "reportSha256": "6113b8157bbc0868579e1141238f84f0f6c5142a41870f5c0421940436895406",
+    "automatedStatus": "unverified",
+    "coverage": "Boot, four visual captures, resources, software-rendering sample, zero-request observations. No project scenario script in this integration run. It precedes the final profile-migration bookkeeping change, which has unit coverage.",
+    "gateCounts": {
+      "passed": 21,
+      "failed": 0,
+      "unverified": 19
+    }
+  },
+  "toolSha256": {
+    "network_audit.py": "16476abfa213968fcbb41e0ac551058448fbf86860497ee47250dd180e8ae461",
+    "self_test_v2.py": "f0599062c9abd2424206c2d97135cda4de74bbc5088b84aaecc1b18e647e45e0",
+    "finalize_review.py": "da4cbc66e0962f7da1ed52acc7b0492fb2c1d419d0b2d3beb85337daee59f5fe",
+    "feedback_audit.py": "7043e86d4115c64c1d901439606a994ae9508c07e5d34a69433490d1828a4a05",
+    "self_test.py": "796265f58c0b31db7dd75cec7608e928a7a7ef529ae70d3585a5ca2996c0937c",
+    "experience_audit.py": "df1fdefcc339cbe42ef6a540e846104b5d9b61efe2fd9d2bd3049c29594b68ca",
+    "stability_audit.py": "b39172b0922bb912778f44c5ea5a5d18ee8eeb6b835e899cf270d7b712f4cffc",
+    "validate_game.py": "2b84022a5a2ef5601d792959924d462d5fff56176a9b1d204e19f811a893688e",
+    "self_test_network.py": "7eb8ccc10b3692b6a5e7824349053d58a28ac2b54a3f612d01bac521c57ebdaf"
+  },
+  "knownLimitations": [
+    "No new reference-quality game produced by this Skill revision.",
+    "User-reported intermittent shot feedback remains an open P1 in the game issue log.",
+    "Submitted effects still require actual final-frame review; counters are not visual quality.",
+    "No target hardware GPU performance certification."
+  ]
+}
