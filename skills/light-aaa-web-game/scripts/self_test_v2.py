@@ -128,6 +128,42 @@ class ExperienceTests(unittest.TestCase):
         self.review['issues'] = [{'id': 'shot-disappears', 'priority': 'P1', 'status': 'open'}]
         self.assertTrue(self.result()['failures'])
 
+    def test_open_polish_issue_blocking_a_declared_goal_overrides_a_pass(self):
+        self.review['issues'] = [{'id': 'unreadable-transition', 'priority': 'P2',
+                                  'status': 'open', 'blocksGoal': 'action_clarity'}]
+        self.assertTrue(self.result()['failures'])
+        self.review['issues'][0].pop('blocksGoal')
+        self.assertEqual(self.result(), {'failures': [], 'unverified': []})
+
+    def test_closing_a_goal_blocker_needs_verified_comparison_and_regression(self):
+        baseline = self.root/'before.txt'
+        baseline.write_text('Synthetic baseline: the changed state disappears before it can be seen.')
+        before = {'path': baseline.name, 'sha256': hashlib.sha256(baseline.read_bytes()).hexdigest()}
+        issue = {'id': 'lost-cue', 'priority': 'P2', 'status': 'closed', 'blocksGoal': 'action_clarity',
+                 'verifiedArtifactSha256': 'test-sha', 'playerOutcome': 'The changed state remains visible.',
+                 'beforeEvidence': [before], 'afterEvidence': [self.ref]}
+        self.review['issues'] = [issue]
+        self.assertTrue(self.result()['unverified'])
+        issue['regressionEvidence'] = [self.ref]
+        self.assertEqual(self.result(), {'failures': [], 'unverified': []})
+
+    def test_unrecognized_goal_on_an_issue_needs_review(self):
+        self.review['issues'] = [{'id': 'lost-cue', 'priority': 'P2', 'status': 'open',
+                                  'blocksGoal': 'undeclared-goal'}]
+        self.assertTrue(self.result()['unverified'])
+
+    def test_a_project_experience_goal_needs_its_own_observation_and_evidence(self):
+        goals = ['action_clarity', 'intended_experience']
+        def result():
+            return audit_experience(self.review, goals, 'test-sha', self.root)
+
+        self.assertTrue(result()['unverified'])
+        self.review['goals'].append({'id': 'intended_experience', 'status': 'passed',
+                                     'observation': 'The prior choice was recognizable on returning.', 'evidence': []})
+        self.assertTrue(result()['unverified'])
+        self.review['goals'][-1]['evidence'] = [self.ref]
+        self.assertEqual(result(), {'failures': [], 'unverified': []})
+
     def test_code_change_without_before_after_is_not_closed(self):
         self.review['issues'] = [{'id': 'shot-disappears', 'priority': 'P1', 'status': 'closed',
                                  'verifiedArtifactSha256': 'test-sha', 'playerOutcome': 'Claimed fixed without observed evidence.'}]

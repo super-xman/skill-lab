@@ -34,13 +34,19 @@ def audit_experience(review, rules, artifact_sha, root):
         evidence(item.get('evidence'), name)
     for item in review.get('issues', []):
         name = item.get('id', 'unnamed')
-        if item.get('priority') in ['P0', 'P1'] and item.get('status') != 'closed':
-            failures.append('Open core-experience issue: ' + name)
-        if item.get('status') == 'closed':
-            if item.get('verifiedArtifactSha256') != artifact_sha:
-                failures.append('Issue closure uses another game build: ' + name)
-            if len(item.get('playerOutcome', '').strip()) < 12:
-                gaps.append('Missing observed outcome after fix: ' + name)
-            for phase in ['beforeEvidence', 'afterEvidence', 'regressionEvidence']:
-                evidence(item.get(phase), name + '/' + phase)
+        goal = item.get('blocksGoal')
+        if goal and goal not in rules:
+            gaps.append(f'Issue {name} names an undeclared experience goal: {goal}')
+        if item.get('status') != 'closed':
+            if goal in rules:
+                failures.append(f'Open issue {name} blocks experience goal: {goal}')
+            elif item.get('priority') in ['P0', 'P1']:
+                failures.append('Open core-experience issue: ' + name)
+            continue
+        if item.get('verifiedArtifactSha256') != artifact_sha:
+            failures.append('Issue closure uses another game build: ' + name)
+        if len(item.get('playerOutcome', '').strip()) < 12:
+            gaps.append('Missing observed outcome after fix: ' + name)
+        for phase in ['beforeEvidence', 'afterEvidence', 'regressionEvidence']:
+            evidence(item.get(phase), name + '/' + phase)
     return {'failures': failures, 'unverified': gaps}

@@ -8,14 +8,15 @@
       "report": "原话或观察事实，不把原因猜测写成事实",
       "priority": "P1",
       "status": "open",
+      "blocksGoal": null,
       "playerContext": "",
       "playerImpact": "",
       "hypothesis": "",
       "reproductionSteps": [],
       "proposedChange": "",
       "successMetric": {
-        "name": "例如 missingFeedback / acceptedActions",
-        "target": 0,
+        "name": "填写能区分前后体验的观察或指标",
+        "target": null,
         "before": null,
         "after": null
       },

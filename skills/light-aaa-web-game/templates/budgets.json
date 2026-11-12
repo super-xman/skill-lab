@@ -23,7 +23,7 @@
   "submittedTrianglesMax": 3500000,
   "visualScoreMin": 4,
   "requiredMotionReviews": ["primary_action", "progression", "recovery"],
-  "requiredExperienceGoals": ["first_session", "action_clarity", "navigation", "recovery", "comfort"],
+  "requiredExperienceGoals": ["first_session", "action_clarity", "navigation", "recovery", "comfort", "intended_experience"],
   "feedbackRules": {
     "requiredChannels": ["result"],
     "minAcceptedActions": 12,
