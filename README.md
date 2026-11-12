@@ -8,7 +8,7 @@
 
 | Skill | 版本 | 用途 |
 | --- | --- | --- |
-| [lightweight-aaa-web-game](skills/lightweight-aaa-web-game/) | 2.0.0 | 使用程序化资产开发轻量高画质 Web 3D 游戏，包含单 HTML、零额外网络请求、玩家体验闭环与量化验收。 |
+| [light-aaa-web-game](skills/light-aaa-web-game/) | 2.0.0 | 使用程序化资产开发轻量高画质 Web 3D 游戏，包含单 HTML、零额外网络请求、玩家体验闭环与量化验收。 |
 
 ## 安装与使用
 
@@ -25,33 +25,33 @@ Codex 项目级安装：
 
 ```bash
 mkdir -p /path/to/project/.agents/skills
-cp -R skills/lightweight-aaa-web-game /path/to/project/.agents/skills/
+cp -R skills/light-aaa-web-game /path/to/project/.agents/skills/
 ```
 
 Claude Code 项目级安装：
 
 ```bash
 mkdir -p /path/to/project/.claude/skills
-cp -R skills/lightweight-aaa-web-game /path/to/project/.claude/skills/
+cp -R skills/light-aaa-web-game /path/to/project/.claude/skills/
 ```
 
 重新加载客户端的技能后，明确调用 skill，例如：
 
-> 使用 lightweight-aaa-web-game，制作一个完整可玩的 Web 射击关卡。严格遵循 skill 的设计、实现、体验迭代和验收流程，交付单 HTML、源码与验收报告，并如实标注未验证项。
+> 使用 light-aaa-web-game，制作一个完整可玩的 Web 射击关卡。严格遵循 skill 的设计、实现、体验迭代和验收流程，交付单 HTML、源码与验收报告，并如实标注未验证项。
 
 ## 验证
 
 当前 skill 的验证器要求 Python 3.10+；资源审计自测使用 Node.js 20+。
 
 ```bash
-cd skills/lightweight-aaa-web-game
+cd skills/light-aaa-web-game
 python -m pip install -r scripts/requirements.txt
 python scripts/self_test.py
 python scripts/self_test_v2.py
 node scripts/self_test_resources.mjs
 ```
 
-浏览器网络反例与游戏验收方法见 [skill 使用说明](skills/lightweight-aaa-web-game/README.md)。验证器自身测试通过不代表生成的游戏已经通过画质或性能验收。
+浏览器网络反例与游戏验收方法见 [skill 使用说明](skills/light-aaa-web-game/README.md)。验证器自身测试通过不代表生成的游戏已经通过画质或性能验收。
 
 ## 添加其他 skill
 

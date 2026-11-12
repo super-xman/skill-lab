@@ -1,4 +1,4 @@
-# lightweight-aaa-web-game v2
+# light-aaa-web-game v2
 
 可复用的轻量高画质 Web 游戏 Skill，主要说明在 `SKILL.md`。包含架构、程序化资产配方、默认预算、诊断接口、自动验证器与视觉审查流程。不包含原附件源码或游戏引擎。
 
@@ -6,15 +6,15 @@ v2 的重点是玩家体验闭环：先定义玩家目标和参考品质锚点�
 
 ## 使用
 
-将整个目录放入支持 Agent Skills 的客户端所读取的技能目录，保持 `SKILL.md` 位于目录根部。常见项目级位置为 Codex 的 `.agents/skills/lightweight-aaa-web-game/` 或 Claude Code 的 `.claude/skills/lightweight-aaa-web-game/`；具体以客户端配置为准。重新加载客户端技能后使用，生成本文件不意味着其他设备已自动安装。
+将整个目录放入支持 Agent Skills 的客户端所读取的技能目录，保持 `SKILL.md` 位于目录根部。常见项目级位置为 Codex 的 `.agents/skills/light-aaa-web-game/` 或 Claude Code 的 `.claude/skills/light-aaa-web-game/`；具体以客户端配置为准。重新加载客户端技能后使用，生成本文件不意味着其他设备已自动安装。
 
 示例提示：
 
-> 使用 lightweight-aaa-web-game，做一个工业港口题材的第一人称 Web 射击关卡。单 HTML 离线运行，体积不超过 2 MiB。先完成玩法闭环，再做程序化素材和高画质，最后运行验证、检查实际截图，报告已通过与未验证项。
+> 使用 light-aaa-web-game，做一个工业港口题材的第一人称 Web 射击关卡。单 HTML 离线运行，体积不超过 2 MiB。先完成玩法闭环，再做程序化素材和高画质，最后运行验证、检查实际截图，报告已通过与未验证项。
 
 建议完整调用：
 
-> 使用 lightweight-aaa-web-game v2，以我给的 Demo 为品质参考。先从新玩家的目标、操作反馈和失败恢复定义 experience-plan，并做一段达到参考品质的可玩样板。成品只有一个 HTML，除入口文档外不得有任何网络请求。每轮从玩家角度提出 2–3 条具体优化建议，在授权范围内实施并复测；用 iteration-log 保存问题、假设、修改前后和回归证据。P0/P1、动态反馈、视觉或数值门槛不通过就继续有针对性地迭代；缺测如实标记。不要把扣弹成功当成射击反馈可见，不要用效果叠加掩盖材质和构图问题。
+> 使用 light-aaa-web-game v2，以我给的 Demo 为品质参考。先从新玩家的目标、操作反馈和失败恢复定义 experience-plan，并做一段达到参考品质的可玩样板。成品只有一个 HTML，除入口文档外不得有任何网络请求。每轮从玩家角度提出 2–3 条具体优化建议，在授权范围内实施并复测；用 iteration-log 保存问题、假设、修改前后和回归证据。P0/P1、动态反馈、视觉或数值门槛不通过就继续有针对性地迭代；缺测如实标记。不要把扣弹成功当成射击反馈可见，不要用效果叠加掩盖材质和构图问题。
 
 ## 文件
 

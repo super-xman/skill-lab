@@ -1,5 +1,5 @@
 ---
-name: lightweight-aaa-web-game
+name: light-aaa-web-game
 description: Build and verify lightweight, visually ambitious 3D Web games using Three.js/WebGL2, procedural geometry and materials, synthesized audio, and compact gameplay systems. Use when the user requests a small single-file browser game, an offline HTML 3D game, AAA-style Web graphics, procedural game assets, or size/performance optimization of such a game. Includes rendered visual validation, gameplay checks, and honest hardware performance gates. Not a promise of commercial AAA content scale.
 metadata:
   version: "2.0.0"
