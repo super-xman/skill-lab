@@ -2,7 +2,7 @@
 name: light-aaa-web-game
 description: Build and verify lightweight, visually ambitious 3D Web games using Three.js/WebGL2, procedural geometry and materials, synthesized audio, and compact gameplay systems. Use when the user requests a small single-file browser game, an offline HTML 3D game, AAA-style Web graphics, procedural game assets, or size/performance optimization of such a game. Includes rendered visual validation, gameplay checks, and honest hardware performance gates. Not a promise of commercial AAA content scale.
 metadata:
-  version: "2.0.0"
+  version: "1"
 ---
 
 # 轻量高画质 Web 游戏
@@ -104,7 +104,7 @@ python <skill-dir>/scripts/validate_game.py dist/game.html \
 
 验证器输出真实尺寸、请求记录、运行错误、GPU 标识、帧间隔、游戏指标、资源审计、截图与 SHA-256。自动结果必须区分 `passed / failed / unverified`。缺少接口、测试或测量不是通过。
 
-v2 还计算每次有效开火与主画面特效提交的对应率，检查连续开火/对象池复用、3 次独立冷启动、5 次重开、60 秒战斗及 300 秒持续运行。帧节奏需覆盖 60/30/15 FPS；人为降帧是边界测试，不能作为目标硬件性能证据。缺少这些观测时保持未验证。每轮小改动可以只复测受影响部分；正式交付前必须完成累计完整证据。
+验收器还计算每次有效开火与主画面特效提交的对应率，检查连续开火/对象池复用、3 次独立冷启动、5 次重开、60 秒战斗及 300 秒持续运行。帧节奏需覆盖 60/30/15 FPS；人为降帧是边界测试，不能作为目标硬件性能证据。缺少这些观测时保持未验证。每轮小改动可以只复测受影响部分；正式交付前必须完成累计完整证据。
 
 零请求验收从干净上下文开始，禁用缓存/SW，监听到任务完成和重开之后。请求被 CSP/网络拦截、超时、失败或命中缓存，均不能掩盖尝试。页面登录外壳与独立游戏文件分别报告；未经检查不能声称托管地址的全部流量为零。
 

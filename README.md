@@ -8,7 +8,7 @@
 
 | Skill | 版本 | 用途 |
 | --- | --- | --- |
-| [light-aaa-web-game](skills/light-aaa-web-game/) | 2.0.0 | 使用程序化资产开发轻量高画质 Web 3D 游戏，包含单 HTML、零额外网络请求、玩家体验闭环与量化验收。 |
+| [light-aaa-web-game](skills/light-aaa-web-game/) | 1 | 使用程序化资产开发轻量高画质 Web 3D 游戏，包含单 HTML、零额外网络请求、玩家体验闭环与量化验收。 |
 
 ## 安装与使用
 
