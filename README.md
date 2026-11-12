@@ -6,9 +6,9 @@
 
 ## 当前收录
 
-| Skill | 版本 | 用途 |
-| --- | --- | --- |
-| [light-aaa-web-game](skills/light-aaa-web-game/) | 1 | 按玩法生成轻量高画质 Web 游戏，使用程序化资产、单 HTML 和零额外网络请求，按核心操作和真实场景验收。 |
+| Skill | 用途 |
+| --- | --- |
+| [light-aaa-web-game](skills/light-aaa-web-game/) | 按玩法生成轻量高画质 Web 游戏，使用程序化资产、单 HTML 和零额外网络请求，按核心操作和真实场景验收。 |
 
 ## 安装与使用
 
