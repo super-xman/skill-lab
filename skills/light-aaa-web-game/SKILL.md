@@ -38,6 +38,8 @@ python <skill-dir>/scripts/validate_game.py dist/game.html \
 
 实际打开截图和核心动作的连续画面，按[视觉审查表](templates/visual-review.json)记录构图、材质、光照、可读性和瑕疵。通过正常入口试玩，遵循[玩家体验闭环](references/experience-loop.md)，用[迭代记录](templates/iteration-log.json)保存问题、修改前后对比、回归证据和玩家结果。核心体验缺陷需修复并复测。
 
+打磨画质时，选一件玩家反复观察或操作的物体，在实际游玩尺度检查它的表面，再观察它在移动或交互中是否清晰。按[近景与移动审查](references/validation.md#近景与移动审查)保存对照画面，并比较渲染改动前后同一路线的 p95 帧间隔。
+
 ```bash
 python <skill-dir>/scripts/finalize_review.py \
   artifacts/validation/report.json artifacts/validation/visual-review.json
