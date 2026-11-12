@@ -8,6 +8,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from network_audit import NetworkAudit
+from validate_game import GPU, wait_for_observation
 
 
 def main():
@@ -25,6 +26,17 @@ def main():
         url = f'http://127.0.0.1:{server.server_port}/index.html'
         cases = [
             ('inline_and_data_blob', "async()=>{await fetch('data:text/plain,local');const u=URL.createObjectURL(new Blob(['local']));await fetch(u);URL.revokeObjectURL(u);}", 'passed'),
+            ('strict_csp_canvas2d', """() => {
+              const policy = document.createElement('meta');
+              policy.httpEquiv = 'Content-Security-Policy';
+              policy.content = "script-src 'unsafe-inline'; connect-src 'none'";
+              document.head.append(policy);
+              const ctx = document.querySelector('canvas').getContext('2d');
+              requestAnimationFrame(() => {
+                ctx.fillRect(0, 0, 1, 1);
+                window.painted = ctx.getImageData(0, 0, 1, 1).data[3] === 255;
+              });
+            }""", 'passed'),
             ('fetch_after_input', "()=>{go.onclick=()=>fetch('/hidden.json').catch(()=>{});go.click();}", 'failed'),
             ('same_entry_fetch', "()=>fetch(location.href).catch(()=>{})", 'failed'),
             ('same_entry_iframe', "()=>{const f=document.createElement('iframe');f.src=location.href;document.body.append(f);}", 'failed'),
@@ -43,7 +55,12 @@ def main():
                 for name, script, expected in cases:
                     context=browser.new_context(service_workers='block')
                     page=context.new_page();audit=NetworkAudit(context,page,url)
-                    page.goto(url);page.evaluate(script);page.wait_for_timeout(500)
+                    page.goto(url);page.evaluate(script)
+                    if name == 'strict_csp_canvas2d':
+                        wait_for_observation(page, 'window.painted', 5)
+                        if not page.evaluate(GPU, 'canvas2d')['available']:
+                            raise AssertionError('Canvas 2D backend was not recognized')
+                    page.wait_for_timeout(500)
                     result=audit.result()
                     results.append({'case':name,'expected':expected,'actual':result['status'],
                                     'passed':result['status']==expected,'evidence':result['evidence']})

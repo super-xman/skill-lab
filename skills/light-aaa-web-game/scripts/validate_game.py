@@ -41,10 +41,54 @@ def aggregate(gates):
 def profile_check(budget, report):
     required = ['requiredMotionReviews', 'requiredExperienceGoals', 'feedbackRules', 'stabilityTargets']
     missing = [name for name in required if not budget.get(name)]
-    valid = budget.get('schemaVersion', 1) >= 2 and not missing
-    gate(report, 'validation_profile', 'passed' if valid else 'unverified',
-         {'schemaVersion': budget.get('schemaVersion', 1), 'missingV2Fields': missing,
-          'note': 'A v1 budget is historical coverage, not v2 acceptance. Merge new gates without relaxing existing limits.'})
+    version = budget.get('schemaVersion', 1)
+    if version < 3:
+        gate(report, 'validation_profile', 'passed' if version == 2 and not missing else 'unverified',
+             {'schemaVersion': version, 'missingV2Fields': missing})
+        return
+
+    def names(value):
+        return isinstance(value, list) and bool(value) and all(isinstance(n, str) and n.strip() for n in value)
+
+    for key in ['requiredScenes', 'requiredMotionReviews', 'requiredGameplayChecks',
+                'requiredResourceChecks', 'requiredExperienceGoals']:
+        if not names(budget.get(key)):
+            missing.append(key)
+    if budget.get('renderBackend', 'webgl') not in ('webgl', 'canvas2d'):
+        missing.append('renderBackend')
+    if budget.get('benchmarkScene') not in (budget.get('requiredScenes') or []):
+        missing.append('benchmarkScene')
+    targets = budget.get('benchmarkLoad')
+    if not isinstance(targets, dict) or not targets or not all(
+            name.strip() and type(value) in (int, float) and math.isfinite(value) and value > 0
+            for name, value in targets.items()):
+        missing.append('benchmarkLoad')
+    feedback = budget.get('feedbackRules') or {}
+    if not names(feedback.get('requiredChannels')):
+        missing.append('feedbackRules.requiredChannels')
+    for key in ['minAcceptedActions', 'minPresentedFrames', 'maxFirstFrameDelay']:
+        if type(feedback.get(key)) is not int or feedback[key] < 1:
+            missing.append('feedbackRules.' + key)
+    active = (budget.get('stabilityTargets') or {}).get('activePlaySeconds')
+    if type(active) not in (int, float) or not math.isfinite(active) or active <= 0:
+        missing.append('stabilityTargets.activePlaySeconds')
+    gate(report, 'validation_profile', 'passed' if version == 3 and not missing else 'unverified',
+         {'schemaVersion': version, 'missingOrInvalid': sorted(set(missing))})
+
+
+def benchmark_load(budget, metrics):
+    """Compare a measured scene to its project's predeclared representative load."""
+    if budget.get('schemaVersion', 1) >= 3:
+        limits = budget.get('benchmarkLoad', {})
+        observed = metrics.get('workload') or {}
+    else:
+        limits = {'enemiesAlive': budget['benchmarkMinEnemies'], 'effectsActive': budget['benchmarkMinEffects']}
+        observed = metrics
+    actual = {key: observed.get(key) for key in limits}
+    meets_limits = bool(limits) and all(
+        type(value) in (int, float) and math.isfinite(value) and value >= limits[key]
+        for key, value in actual.items())
+    return meets_limits, {'minimum': limits, 'observed': actual}
 
 
 class AssetParser(HTMLParser):
@@ -150,15 +194,40 @@ METRICS = """() => {
     internalWidth:g.render.resolution.x, internalHeight:g.render.resolution.y,
     sceneId:'reference', dynamicResolution:null};
 }"""
-GPU = """() => {
-  const canvas=document.querySelector('[data-game-canvas]') || document.querySelector('#view') || document.querySelector('canvas');
-  if(!canvas) return {renderer:'unknown',canvas:false};
-  const gl=canvas.getContext('webgl2') || canvas.getContext('webgl');
-  if(!gl) return {renderer:'unknown',canvas:true,webgl:false};
-  const ext=gl.getExtension('WEBGL_debug_renderer_info');
-  return {renderer:String(gl.getParameter(ext?ext.UNMASKED_RENDERER_WEBGL:gl.RENDERER)),
-    version:gl.getParameter(gl.VERSION),identified:!!ext,canvas:true,webgl:true};
+GPU = """backend => {
+  const canvas = document.querySelector('canvas[data-game-canvas]') || document.querySelector('canvas#view') || document.querySelector('canvas');
+  const result = {backend, available: false, canvas: !!canvas, renderer: 'unknown', identified: false};
+  if (!canvas || typeof canvas.getContext !== 'function') return result;
+  // Canvas 2D and WebGL cannot share a context on the same canvas. In 2D mode
+  // the separate probe identifies the host adapter, not the 2D acceleration path.
+  const is2d = backend === 'canvas2d';
+  if (is2d) result.available = !!canvas.getContext('2d');
+  const probe = is2d ? document.createElement('canvas') : canvas;
+  result.adapterSource = is2d ? 'separate WebGL canvas' : 'game WebGL context';
+  const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+  result.webgl = !!gl;
+  if (!gl) return result;
+  if (!is2d) result.available = true;
+  const ext = gl.getExtension('WEBGL_debug_renderer_info');
+  result.renderer = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+  result.identified = !!ext;
+  result.version = gl.getParameter(gl.VERSION);
+  if (is2d) gl.getExtension('WEBGL_lose_context')?.loseContext();
+  return result;
 }"""
+
+
+def wait_for_observation(page, expression, timeout_seconds):
+    # These fixed diagnostics expressions must also work under the shipped HTML's CSP.
+    page.evaluate(f"""ms => new Promise((resolve, reject) => {{
+      const deadline = performance.now() + ms;
+      function check() {{
+        if ({expression}) resolve(true);
+        else if (performance.now() >= deadline) reject(new Error('Game observation timed out'));
+        else setTimeout(check, 25);
+      }}
+      check();
+    }})""", timeout_seconds * 1000)
 
 
 def browser_checks(args, budget, report, out):
@@ -199,17 +268,19 @@ def browser_checks(args, budget, report, out):
             page.goto(entry_url, wait_until='domcontentloaded')
             ready = ('window.__ready || window.__fatal' if args.adapter == 'reference' else
                      'window.__GAME_TEST__ && (window.__GAME_TEST__.ready || window.__GAME_TEST__.fatal)')
-            page.wait_for_function('(' + ready + ') || window.__SKILL_BOOT_ERROR__', timeout=args.timeout * 1000)
+            wait_for_observation(page, '(' + ready + ') || window.__SKILL_BOOT_ERROR__', args.timeout)
             boot_ms = (time.perf_counter() - started) * 1000
             fatal = page.evaluate('window.__GAME_TEST__?.fatal || window.__fatal || window.__SKILL_BOOT_ERROR__ || null')
             gate(report, 'boot', 'failed' if fatal else 'passed', {'fatal': fatal, 'bootMs': round(boot_ms, 1)})
             if fatal:
                 return
-            gpu = page.evaluate(GPU)
+            backend = budget.get('renderBackend', 'webgl') if budget.get('schemaVersion', 1) >= 3 else 'webgl'
+            gpu = page.evaluate(GPU, backend)
             report['gpu'] = gpu
-            hardware = bool(gpu.get('webgl')) and bool(gpu.get('identified')) and not args.software and not re.search(
+            hardware = gpu['available'] and gpu['identified'] and not args.software and not re.search(
                 r'SwiftShader|llvmpipe|Software|softpipe|unknown', gpu['renderer'], re.I)
-            gate(report, 'webgl', 'passed' if gpu.get('webgl') else 'failed', gpu)
+            renderer_gate = 'render_backend' if budget.get('schemaVersion', 1) >= 3 else 'webgl'
+            gate(report, renderer_gate, 'passed' if gpu['available'] else 'failed', gpu)
             gate(report, 'hardware_boot_budget', ('passed' if boot_ms <= budget['bootMsMax'] else 'failed')
                  if hardware else 'unverified', {'bootMs': round(boot_ms, 1), 'max': budget['bootMsMax'],
                                                 'hardware': hardware})
@@ -233,7 +304,9 @@ def browser_checks(args, budget, report, out):
                 audit = page.evaluate('() => window.__GAME_TEST__.audit()')
             else:
                 audit = {}
-            measured_checks(report, 'resource_', audit, AUDITS)
+            resource_checks = (budget.get('requiredResourceChecks', []) if budget.get('schemaVersion', 1) >= 3
+                               else AUDITS)
+            measured_checks(report, 'resource_', audit, resource_checks)
             if has_contract:
                 page.evaluate('(id) => window.__GAME_TEST__.setScene(id)', budget['benchmarkScene'])
             page.wait_for_timeout(budget['warmupSeconds'] * 1000)
@@ -250,7 +323,7 @@ def browser_checks(args, budget, report, out):
               }
               requestAnimationFrame(tick);
             }""", budget['sampleSeconds'])
-            page.wait_for_function('window.__SKILL_SAMPLE__.done', timeout=args.timeout * 1000)
+            wait_for_observation(page, 'window.__SKILL_SAMPLE__.done', args.timeout)
             samples = page.evaluate('window.__SKILL_SAMPLE__.ms')
             after = page.evaluate(METRICS)
             perf = {'samples': len(samples), 'meanMs': statistics.mean(samples) if samples else None,
@@ -264,8 +337,12 @@ def browser_checks(args, budget, report, out):
             gate(report, 'render_advances', ('passed' if after['frame'] > before['frame'] else 'failed')
                  if advancing else 'unverified', {'before': before.get('frame'), 'after': after.get('frame')})
             frame_delta = after['frame'] - before['frame'] if advancing else 0
-            load_ok = (after.get('enemiesAlive', -1) >= budget['benchmarkMinEnemies'] and
-                       after.get('effectsActive', -1) >= budget['benchmarkMinEffects'])
+            load_ok, load_evidence = benchmark_load(budget, after)
+            if budget.get('schemaVersion', 1) >= 3:
+                started_loaded, start_evidence = benchmark_load(budget, before)
+                load_ok = started_loaded and load_ok
+                gate(report, 'representative_load', 'passed' if has_contract and load_ok else 'unverified',
+                     {'start': start_evidence, 'end': load_evidence})
             resolution_ok = (after.get('internalWidth', 0) >= budget['viewport']['width'] * budget['internalResolutionMinScale'] and
                              after.get('internalHeight', 0) >= budget['viewport']['height'] * budget['internalResolutionMinScale'])
             comparable = hardware and has_contract and load_ok and resolution_ok and frame_delta >= len(samples) * .9 and after.get('dynamicResolution') is False and (
@@ -278,12 +355,13 @@ def browser_checks(args, budget, report, out):
                 perf.get('p95Ms', math.inf) <= budget['p95FrameMsMax'] and
                 perf.get('p99Ms', math.inf) <= budget['p99FrameMsMax'])
             gate(report, 'hardware_frame_budget', ('passed' if passed else 'failed') if comparable else 'unverified', perf)
-            for metric, maximum in [('drawCalls', 'drawCallsMax'), ('submittedTriangles', 'submittedTrianglesMax')]:
-                actual = after.get(metric)
-                valid = isinstance(actual, (int, float)) and math.isfinite(actual) and actual > 0
-                gate(report, metric, ('passed' if actual <= budget[maximum] else 'failed')
-                     if valid and has_contract else 'unverified', {'actual': actual, 'max': budget[maximum],
-                                                                 'scene': after.get('sceneId')})
+            if backend == 'webgl':
+                for metric, maximum in [('drawCalls', 'drawCallsMax'), ('submittedTriangles', 'submittedTrianglesMax')]:
+                    actual = after.get(metric)
+                    valid = isinstance(actual, (int, float)) and math.isfinite(actual) and actual > 0
+                    gate(report, metric, ('passed' if actual <= budget[maximum] else 'failed')
+                         if valid and has_contract else 'unverified', {'actual': actual, 'max': budget[maximum],
+                                                                     'scene': after.get('sceneId')})
             gameplay = {}
             if args.scenario_script:
                 import inspect

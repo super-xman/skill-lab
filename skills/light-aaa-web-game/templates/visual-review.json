@@ -18,7 +18,7 @@
       "issues": []
     },
     {
-      "id": "materials",
+      "id": "detail",
       "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
       "scores": {
         "composition": 0,
@@ -31,20 +31,7 @@
       "issues": []
     },
     {
-      "id": "combat",
-      "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
-      "scores": {
-        "composition": 0,
-        "materials": 0,
-        "lighting": 0,
-        "readability": 0,
-        "artifactFree": 0
-      },
-      "evidence": "",
-      "issues": []
-    },
-    {
-      "id": "interior",
+      "id": "core_play",
       "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
       "scores": {
         "composition": 0,
@@ -67,7 +54,7 @@
       "evidence": ""
     },
     {
-      "id": "reload",
+      "id": "progression",
       "captureSha256": [],
       "visibleFeedback": false,
       "timingAndContinuity": false,
@@ -75,15 +62,7 @@
       "evidence": ""
     },
     {
-      "id": "hit_and_damage",
-      "captureSha256": [],
-      "visibleFeedback": false,
-      "timingAndContinuity": false,
-      "noBlockingArtifacts": false,
-      "evidence": ""
-    },
-    {
-      "id": "restart_and_quality",
+      "id": "recovery",
       "captureSha256": [],
       "visibleFeedback": false,
       "timingAndContinuity": false,

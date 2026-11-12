@@ -11,7 +11,12 @@ from experience_audit import audit_experience
 from validate_game import SKILL, static_checks, profile_check
 from finalize_review import finalize
 
-BUDGET = json.loads((SKILL / 'templates/budgets.json').read_text())
+# Freeze the v2 shooter contract so these tests still exercise existing games.
+V2_FEEDBACK = {'requiredChannels': ['muzzle', 'tracer'], 'minAcceptedShots': 100,
+               'minPresentedFrames': 2, 'maxFirstFrameDelay': 1}
+V2_STABILITY = {'independentColdStarts': 3, 'restartCycles': 5, 'sustainedCombatSeconds': 60,
+                'soakWallSeconds': 300, 'testFrameCaps': [60, 30, 15], 'effectPoolReuseFactor': 3,
+                'postWarmupGpuResourceGrowthMax': 0}
 
 
 class FeedbackTests(unittest.TestCase):
@@ -28,7 +33,7 @@ class FeedbackTests(unittest.TestCase):
         return {'shots': shots, 'renders': renders}
 
     def status(self, data):
-        return audit_feedback(data, BUDGET['feedbackRules'])['status']
+        return audit_feedback(data, V2_FEEDBACK)['status']
 
     def test_complete_observations(self):
         self.assertEqual(self.status(self.fixture()), 'passed')
@@ -39,7 +44,7 @@ class FeedbackTests(unittest.TestCase):
 
     def test_one_intermittent_missing_tracer_fails(self):
         data = self.fixture(); data['renders'] = [r for r in data['renders'] if not (r['shotId'] == '48' and r['channel'] == 'tracer')]
-        result = audit_feedback(data, BUDGET['feedbackRules'])
+        result = audit_feedback(data, V2_FEEDBACK)
         self.assertEqual(result['status'], 'failed')
         self.assertEqual(result['evidence']['missingRate'], 1/200)
 
@@ -77,7 +82,7 @@ class StabilityTests(unittest.TestCase):
                 'frameCapsTested': [60,30,15], 'effectPoolCapacity': 20, 'poolReuseAcceptedShots': 100}
 
     def status(self, data):
-        return audit_stability(data, BUDGET['stabilityTargets'], 'fixture-sha')['status']
+        return audit_stability(data, V2_STABILITY, 'fixture-sha')['status']
 
     def test_complete_release_observations(self):
         self.assertEqual(self.status(self.fixture()), 'passed')
@@ -144,14 +149,16 @@ class StaticNetworkTests(unittest.TestCase):
         self.assertEqual(r['gates'][0]['status'],'unverified')
 
     def test_complete_v2_budget(self):
-        r={'gates':[]}; profile_check(BUDGET,r)
+        r={'gates':[]}; profile_check({'schemaVersion': 2, 'feedbackRules': V2_FEEDBACK,
+                                      'stabilityTargets': V2_STABILITY, 'requiredMotionReviews': ['reload'],
+                                      'requiredExperienceGoals': ['action_clarity']}, r)
         self.assertEqual(r['gates'][0]['status'],'passed')
 
     def test_resource_hints_svg_and_source_maps_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory)/'game.html'
             p.write_text('<link rel="alternate stylesheet" href="theme.css"><link rel="preconnect" href="https://example.invalid"><svg><image href="x.png"/></svg><script>//# sourceMappingURL=game.js.map\n</script>')
-            r = {'gates': []}; static_checks(p, BUDGET, r)
+            r = {'gates': []}; static_checks(p, json.loads((SKILL / 'templates/budgets.json').read_text()), r)
             self.assertEqual(len(r['gates'][-1]['evidence']), 4)
             self.assertEqual(r['gates'][-1]['status'], 'failed')
 
@@ -186,6 +193,17 @@ class FinalReviewTests(unittest.TestCase):
 
     def test_complete_binding(self):
         self.assertEqual(self.result()['releaseStatus'],'passed')
+
+    def test_genre_review_requires_project_load_and_renderer_specific_evidence(self):
+        self.report['budget'].update(schemaVersion=3, renderBackend='canvas2d', requiredResourceChecks=['tiles'])
+        ids = ['rawBytes', 'gzipBytes', 'declared_resources_self_contained', 'diagnostics_contract',
+               'render_backend', 'render_advances', 'required_views', 'resource_tiles']
+        self.report['gates'].extend({'id': name, 'status': 'passed'} for name in ids)
+        self.assertIn('Missing required gate: representative_load', self.result()['unverified'])
+        self.report['gates'].append({'id': 'representative_load', 'status': 'passed'})
+        self.assertEqual(self.result()['releaseStatus'], 'passed')
+        self.report['budget']['renderBackend'] = 'webgl'
+        self.assertIn('Missing required gate: submittedTriangles', self.result()['unverified'])
 
     def test_removed_stability_gate_cannot_pass(self):
         self.report['gates']=[g for g in self.report['gates'] if g['id']!='stability_contract']

@@ -6,18 +6,18 @@
 export function installGameDiagnostics(game) {
   if (new URLSearchParams(location.search).get('test') !== '1') return;
   window.__GAME_TEST__ = {
-    version: 2,
+    version: 3,
     get ready() { return game.isPlayable; }, // after required generation/compilation
     get fatal() { return game.fatalError || null; },
     async setScene(id) {
-      // Must implement overview/materials/combat/interior. Reset deterministic
-      // fixtures, select camera, fix quality/dynamic resolution and settle effects.
-      // combat must contain the agreed representative enemy/FX load.
+      // Implement the views in budgets.requiredScenes, including the representative
+      // workload in benchmarkScene. Fix seed, camera, quality and internal resolution.
       await game.testScenes.select(id);
     },
     metrics() {
       // Cached counters. No synchronous GPU readback here.
-      // Sum all world, shadow, reflection and post passes for one complete frame.
+      // WebGL totals include all world, shadow, reflection and post passes.
+      // Canvas 2D projects can omit drawCalls and submittedTriangles.
       return {
         frame: game.frame,
         sceneId: game.testScenes.current,
@@ -25,10 +25,10 @@ export function installGameDiagnostics(game) {
         dynamicResolution: game.render.dynamicResolutionEnabled,
         internalWidth: game.render.width,
         internalHeight: game.render.height,
-        drawCalls: game.render.frameCounters.drawCalls,
-        submittedTriangles: game.render.frameCounters.triangles,
-        enemiesAlive: game.enemies.aliveCount,
-        effectsActive: game.fx.activeCount,
+        drawCalls: game.render.frameCounters?.drawCalls,
+        submittedTriangles: game.render.frameCounters?.triangles,
+        // Counts from actual simulation/render state, keyed as in benchmarkLoad.
+        workload: game.testScenes.measureWorkload(),
         estimatedTextureBytes: game.resources.estimatedTextureBytes,
         gpuRenderer: game.render.gpuRenderer
       };
@@ -37,20 +37,19 @@ export function installGameDiagnostics(game) {
       // Implement independent checks with observed counts/values, per validation.md.
       // Return {checks:[{id,status:'passed'|'failed'|'unverified',evidence:{...}}]}.
       // Never return unconditional success. A NaN, invalid normal, silent/clipped
-      // sound, non-reproducible seed or missing path must fail its relevant check.
+      // sound, non-reproducible seed or unreachable goal must fail its relevant check.
       return game.resourceAudit.run();
     },
     snapshot() {
-      // Read-only, serializable state for tests: player position/health,
-      // ammo/hit events, enemy state, objectives, game state, audio state.
+      // Expose the observable state needed to verify a real move and its outcome.
       return game.snapshotForTests();
     },
     feedbackObservations() {
       // Store bounded raw observations from actual accepted inputs and completed
-      // MAIN-CAMERA render passes; never derive renders by copying shots.
-      // shots: [{id:'session-1/shot-42', acceptedAtMs:performance.now(),
-      //          acceptedFrame:lastCompletedFrame, expectedFx:['muzzle','tracer']}]
-      // renders: [{shotId:'session-1/shot-42', channel:'tracer',
+      // main display passes. Collect renders independently of accepted inputs.
+      // actions: [{id:'session-1/action-42', acceptedAtMs:performance.now(),
+      //          acceptedFrame:lastCompletedFrame, expectedChannels:['result']}]
+      // renders: [{actionId:'session-1/action-42', channel:'result',
       //            frame:completedFrame, presentedAtMs:performance.now()}]
       // Two different passes of the same frame count only once. Submission is
       // not proof of on-screen visibility. Capture and inspect final frames too.

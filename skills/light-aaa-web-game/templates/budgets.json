@@ -1,15 +1,16 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "profile": "desktop-medium",
+  "renderBackend": "webgl",
   "rawBytesMax": 2097152,
   "gzipBytesMax": 716800,
   "viewport": {"width": 1280, "height": 720},
   "quality": "medium",
   "seed": 4207,
-  "requiredScenes": ["overview", "materials", "combat", "interior"],
-  "benchmarkScene": "combat",
-  "benchmarkMinEnemies": 3,
-  "benchmarkMinEffects": 1,
+  "requiredScenes": ["overview", "detail", "core_play"],
+  "benchmarkScene": "core_play",
+  "benchmarkLoad": {"activeElements": 1},
+  "requiredResourceChecks": ["geometry", "materials", "audio", "determinism", "reachability"],
   "internalResolutionMinScale": 0.8,
   "warmupSeconds": 3,
   "sampleSeconds": 10,
@@ -21,28 +22,24 @@
   "drawCallsMax": 600,
   "submittedTrianglesMax": 3500000,
   "visualScoreMin": 4,
-  "requiredMotionReviews": ["primary_action", "reload", "hit_and_damage", "restart_and_quality"],
+  "requiredMotionReviews": ["primary_action", "progression", "recovery"],
   "requiredExperienceGoals": ["first_session", "action_clarity", "navigation", "recovery", "comfort"],
   "feedbackRules": {
-    "requiredChannels": ["muzzle", "tracer"],
-    "minAcceptedShots": 100,
+    "requiredChannels": ["result"],
+    "minAcceptedActions": 12,
     "minPresentedFrames": 2,
     "maxFirstFrameDelay": 1
   },
   "stabilityTargets": {
     "independentColdStarts": 3,
     "restartCycles": 5,
-    "sustainedCombatSeconds": 60,
+    "activePlaySeconds": 60,
     "soakWallSeconds": 300,
     "testFrameCaps": [60, 30, 15],
-    "effectPoolReuseFactor": 3,
     "postWarmupGpuResourceGrowthMax": 0
   },
   "requiredGameplayChecks": [
-    "movement_collision", "primary_action_hit_and_occlusion", "enemy_response",
-    "objective_progression", "win_and_restart", "loss_and_restart", "pause_resume",
-    "audio_unlock_and_feedback", "quality_fallback",
-    "primary_action_visual_feedback", "sustained_fire_and_pool_reuse",
-    "input_lifecycle", "restart_stress", "cold_start_repetition", "sustained_play"
+    "core_action_result", "objective_progression", "session_recovery",
+    "input_lifecycle", "quality_fallback"
   ]
 }

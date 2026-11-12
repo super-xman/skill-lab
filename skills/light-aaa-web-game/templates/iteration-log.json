@@ -14,7 +14,7 @@
       "reproductionSteps": [],
       "proposedChange": "",
       "successMetric": {
-        "name": "例如 missingFeedback / acceptedShots",
+        "name": "例如 missingFeedback / acceptedActions",
         "target": 0,
         "before": null,
         "after": null

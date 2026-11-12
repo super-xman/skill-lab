@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "player": "第一次接触本游戏的桌面键鼠玩家",
+  "player": "填写目标玩家与输入方式",
   "deviceAndContext": "明确 GPU、屏幕、输入方式及单局时长；未知项保留未知",
   "coreLoop": "REPLACE_WITH_PLAYER_GOAL_AND_ACTIONS",
   "constraints": {
@@ -47,21 +47,21 @@
   ],
   "referenceAnchors": [
     {
-      "id": "weapon_and_action",
+      "id": "core_interaction",
       "playerValue": "",
       "visibleFeatures": [],
       "referenceEvidence": [],
       "acceptanceView": ""
     },
     {
-      "id": "materials_and_wetness",
+      "id": "surface_and_detail",
       "playerValue": "",
       "visibleFeatures": [],
       "referenceEvidence": [],
       "acceptanceView": ""
     },
     {
-      "id": "contact_lighting",
+      "id": "lighting_and_form",
       "playerValue": "",
       "visibleFeatures": [],
       "referenceEvidence": [],

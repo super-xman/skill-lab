@@ -29,14 +29,16 @@ def audit_stability(payload, rules, artifact_sha):
     baseline = payload.get('warmedBaseline', {})
     if any(not number(baseline.get(key)) for key in resources):
         gaps.append('Missing post-warmup resource baseline')
+    legacy = 'activePlaySeconds' not in rules and 'sustainedCombatSeconds' in rules
+    before_key, after_key = ('shotsBefore', 'shotsAfter') if legacy else ('actionsBefore', 'actionsAfter')
     for item in cycles:
         if item.get('state') != 'playing':
             failures.append('Restart does not restore playing state')
-        before, after = item.get('shotsBefore'), item.get('shotsAfter')
+        before, after = item.get(before_key), item.get(after_key)
         if not number(before) or not number(after):
-            gaps.append('Missing actual shot counts after restart')
+            gaps.append('Missing accepted action counts after restart')
         elif after != before + 1:
-            failures.append('First shot after restart is missing or duplicated')
+            failures.append('First action after restart is missing or duplicated')
         settled = item.get('settledResources', {})
         for key in resources:
             if not number(settled.get(key)) or not number(baseline.get(key)):
@@ -44,7 +46,8 @@ def audit_stability(payload, rules, artifact_sha):
             elif settled[key] > baseline[key] + rules['postWarmupGpuResourceGrowthMax']:
                 failures.append('Resource growth after restart: ' + key)
     soak = payload.get('soak', {})
-    for key, target in [('wallSeconds', 'soakWallSeconds'), ('combatSeconds', 'sustainedCombatSeconds')]:
+    play_time = ('combatSeconds', 'sustainedCombatSeconds') if legacy else ('activePlaySeconds', 'activePlaySeconds')
+    for key, target in [('wallSeconds', 'soakWallSeconds'), play_time]:
         if not number(soak.get(key)) or soak[key] < rules[target]:
             gaps.append('Insufficient observed duration: ' + key)
     if not number(soak.get('renderedFrames')) or soak['renderedFrames'] <= 0:
@@ -57,9 +60,11 @@ def audit_stability(payload, rules, artifact_sha):
     caps = payload.get('frameCapsTested', [])
     if not set(rules['testFrameCaps']).issubset(caps):
         gaps.append('Missing deliberate frame-cadence variants')
-    capacity, accepted = payload.get('effectPoolCapacity'), payload.get('poolReuseAcceptedShots')
-    if not number(capacity) or capacity < 1 or not number(accepted) or accepted < capacity * rules['effectPoolReuseFactor']:
-        gaps.append('Effect-pool reuse coverage is insufficient')
+    if 'effectPoolReuseFactor' in rules:
+        capacity = payload.get('effectPoolCapacity')
+        accepted = payload.get('poolReuseAcceptedShots' if legacy else 'poolReuseActions')
+        if not number(capacity) or capacity < 1 or not number(accepted) or accepted < capacity * rules['effectPoolReuseFactor']:
+            gaps.append('Effect-pool reuse coverage is insufficient')
     return {'status': 'failed' if failures else 'unverified' if gaps else 'passed',
             'evidence': {'failures': sorted(set(failures)), 'coverageGaps': sorted(set(gaps)),
                          'observations': payload, 'limits': rules}}

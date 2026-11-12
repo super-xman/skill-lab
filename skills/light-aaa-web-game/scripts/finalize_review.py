@@ -37,6 +37,13 @@ def finalize(report_path, review_path):
         required = {'validation_profile', 'boot', 'offline_resources', 'action_feedback_submission', 'stability_contract',
                     'hardware_boot_budget', 'hardware_frame_budget', 'no_runtime_errors'}
         required.update('gameplay_' + name for name in report['budget']['requiredGameplayChecks'])
+        if report['budget'].get('schemaVersion', 1) >= 3:
+            required.update({'rawBytes', 'gzipBytes', 'declared_resources_self_contained', 'diagnostics_contract',
+                             'render_backend', 'representative_load', 'required_views', 'render_advances'})
+            required.update('nonblank_' + name for name in report['budget']['requiredScenes'])
+            if report['budget'].get('renderBackend', 'webgl') == 'webgl':
+                required.update({'drawCalls', 'submittedTriangles'})
+            required.update('resource_' + name for name in report['budget']['requiredResourceChecks'])
         missing = required - {g['id'] for g in gates}
         unverified.extend('Missing required gate: ' + name for name in sorted(missing))
     if not review.get('reviewer') or review['reviewer'].startswith('REPLACE'):

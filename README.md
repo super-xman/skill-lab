@@ -8,7 +8,7 @@
 
 | Skill | 版本 | 用途 |
 | --- | --- | --- |
-| [light-aaa-web-game](skills/light-aaa-web-game/) | 1 | 使用程序化资产开发轻量高画质 Web 3D 游戏，包含单 HTML、零额外网络请求、玩家体验闭环与量化验收。 |
+| [light-aaa-web-game](skills/light-aaa-web-game/) | 1 | 按玩法生成轻量高画质 Web 游戏，使用程序化资产、单 HTML 和零额外网络请求，按核心操作和真实场景验收。 |
 
 ## 安装与使用
 
@@ -37,7 +37,7 @@ cp -R skills/light-aaa-web-game /path/to/project/.claude/skills/
 
 重新加载客户端的技能后，明确调用 skill，例如：
 
-> 使用 light-aaa-web-game，制作一个完整可玩的 Web 射击关卡。严格遵循 skill 的设计、实现、体验迭代和验收流程，交付单 HTML、源码与验收报告，并如实标注未验证项。
+> 使用 light-aaa-web-game，制作一款海岛滑翔竞速游戏，玩家穿过风门完成计时，并能再次挑战。严格遵循 skill 的设计、实现、体验迭代和验收流程，交付单 HTML、源码与验收报告，并如实标注未验证项。
 
 ## 验证
 
