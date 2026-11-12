@@ -44,7 +44,7 @@ return {
 }
 ```
 
-新版诊断记录使用 `actions / actionId / expectedChannels`。要复现本试作的严格反馈覆盖，在新版预算中设置 `requiredChannels: ["muzzle", "tracer"]`、`minAcceptedActions: 100` 和 `effectPoolReuseFactor: 3`（此项位于 `stabilityTargets`）；将上文的观测分别写入对应字段。`feedback_audit.py` 按预算计算 `缺失反馈对数 / 必需的 shot-channel 对数`、首帧延迟、独立提交帧数；没有样本即未验证。禁止从 shots 计数反推 renders，或把阴影 pass 当作玩家看到的帧。
+第 3 版诊断记录使用 `actions / actionId / expectedChannels`。要复现本试作的严格反馈覆盖，在第 3 版预算中设置 `requiredChannels: ["muzzle", "tracer"]`、`minAcceptedActions: 100` 和 `effectPoolReuseFactor: 3`（此项位于 `stabilityTargets`）；将上文的观测分别写入对应字段。`feedback_audit.py` 按预算计算 `缺失反馈对数 / 必需的 shot-channel 对数`、首帧延迟、独立提交帧数；没有样本即未验证。禁止从 shots 计数反推 renders，或把阴影 pass 当作玩家看到的帧。
 
 连续短特效不能用“开枪后等 200 ms 再截图”验证。可在同一生产代码路径下用可控帧推进逐帧捕获最终画布，或录制足够帧率的视频；测试模式只允许控制时间、夹具和观察，不得把效果加粗/加亮/延长后冒充正式效果。另做不控制时间的实时试玩，防止测试路径掩盖问题。
 

@@ -253,6 +253,31 @@ class FinalReviewTests(unittest.TestCase):
         Path(self.report['motionEvidence'][0]['path']).write_bytes(b'changed')
         self.assertEqual(self.result()['releaseStatus'],'failed')
 
+    def test_on_demand_release_uses_its_declared_rubric_and_output_evidence(self):
+        self.report['budget'].update(schemaVersion=4, renderBackend='dom', renderMode='on-demand',
+                                     requiredScenes=['desk'], visualDimensions=['typography'], requiredResourceChecks=[])
+        self.report['gates'] = [{'id': name, 'status': 'passed'} for name in [
+            'validation_profile', 'boot', 'offline_resources', 'stability_contract', 'no_runtime_errors',
+            'browser_boot_budget', 'player_input', 'action_response', 'gameplay_action', 'rawBytes', 'gzipBytes',
+            'declared_resources_self_contained', 'diagnostics_contract', 'render_backend', 'representative_load',
+            'required_views']]
+        self.report['motionEvidence'].pop()
+        shot = dict(self.report['motionEvidence'][0], id='desk')
+        self.report['screenshots'] = [shot]
+        self.review['scenes'] = [{'id': 'desk', 'screenshotSha256': shot['sha256'],
+                                  'evidence': 'Synthetic fixture checks project dimensions and evidence binding.',
+                                  'scores': {'typography': 4}}]
+        self.assertEqual(self.result()['releaseStatus'], 'passed')
+        self.review['scenes'][0]['scores'] = {}
+        self.assertIn('Missing declared visual score: desk/typography', self.result()['unverified'])
+        self.review['scenes'][0]['scores'] = {'typography': 2}
+        self.assertIn('Visual score below target: desk/typography', self.result()['failures'])
+        self.review['scenes'][0]['scores']['typography'] = 4
+        self.report['gates'] = [g for g in self.report['gates'] if g['id'] != 'action_response']
+        self.assertIn('Missing required gate: action_response', self.result()['unverified'])
+        self.report['budget']['renderMode'] = 'continuous'
+        self.assertIn('Missing required gate: hardware_frame_budget', self.result()['unverified'])
+
     def test_missing_player_experience_cannot_pass(self):
         self.report['budget']['requiredExperienceGoals']=['action_clarity']
         self.assertEqual(self.result()['releaseStatus'],'unverified')

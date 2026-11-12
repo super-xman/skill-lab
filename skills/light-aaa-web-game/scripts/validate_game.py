@@ -17,10 +17,12 @@ from pathlib import Path
 from urllib.parse import quote, urlencode, urlsplit
 from network_audit import NetworkAudit
 from feedback_audit import audit_feedback
+from response_audit import audit_response, rule_errors, number
 from stability_audit import audit_stability
 
 SKILL = Path(__file__).resolve().parents[1]
 AUDITS = ['geometry', 'materials', 'audio', 'determinism', 'navigation']
+BROWSER_INPUTS = {'mouse', 'keyboard', 'touch', 'pen'}
 
 
 def sha(path):
@@ -39,22 +41,27 @@ def aggregate(gates):
 
 
 def profile_check(budget, report):
-    required = ['requiredMotionReviews', 'requiredExperienceGoals', 'feedbackRules', 'stabilityTargets']
-    missing = [name for name in required if not budget.get(name)]
     version = budget.get('schemaVersion', 1)
+    required = ['requiredExperienceGoals', 'feedbackRules', 'stabilityTargets']
+    if version < 4:
+        required.append('requiredMotionReviews')
+    missing = [name for name in required if not budget.get(name)]
     if version < 3:
         gate(report, 'validation_profile', 'passed' if version == 2 and not missing else 'unverified',
              {'schemaVersion': version, 'missingV2Fields': missing})
         return
 
-    def names(value):
-        return isinstance(value, list) and bool(value) and all(isinstance(n, str) and n.strip() for n in value)
+    def names(value, allow_empty=False):
+        return (isinstance(value, list) and (allow_empty or bool(value))
+                and all(isinstance(n, str) and n.strip() for n in value))
 
     for key in ['requiredScenes', 'requiredMotionReviews', 'requiredGameplayChecks',
                 'requiredResourceChecks', 'requiredExperienceGoals']:
-        if not names(budget.get(key)):
+        optional = version == 4 and key in ('requiredMotionReviews', 'requiredResourceChecks')
+        if not names(budget.get(key), allow_empty=optional):
             missing.append(key)
-    if budget.get('renderBackend', 'webgl') not in ('webgl', 'canvas2d'):
+    backends = ('webgl', 'canvas2d', 'dom', 'svg') if version == 4 else ('webgl', 'canvas2d')
+    if budget.get('renderBackend', None if version == 4 else 'webgl') not in backends:
         missing.append('renderBackend')
     if budget.get('benchmarkScene') not in (budget.get('requiredScenes') or []):
         missing.append('benchmarkScene')
@@ -64,15 +71,46 @@ def profile_check(budget, report):
             for name, value in targets.items()):
         missing.append('benchmarkLoad')
     feedback = budget.get('feedbackRules') or {}
-    if not names(feedback.get('requiredChannels')):
-        missing.append('feedbackRules.requiredChannels')
-    for key in ['minAcceptedActions', 'minPresentedFrames', 'maxFirstFrameDelay']:
-        if type(feedback.get(key)) is not int or feedback[key] < 1:
-            missing.append('feedbackRules.' + key)
+    if version == 4:
+        missing.extend(rule_errors(feedback))
+        if budget.get('renderMode') not in ('continuous', 'on-demand'):
+            missing.append('renderMode')
+        channels = feedback.get('channels') if isinstance(feedback, dict) else None
+        uses_visuals = isinstance(channels, dict) and any(isinstance(c, dict) and c.get('source') == 'visual'
+                                                          for c in channels.values())
+        if not names(budget.get('visualDimensions'), allow_empty=not uses_visuals):
+            missing.append('visualDimensions')
+        device = budget.get('device')
+        if not isinstance(device, dict):
+            device = {}
+        methods = device.get('inputMethods')
+        # Other devices can be measured by a project scenario on the appropriate platform.
+        gameplay_checks = budget.get('requiredGameplayChecks')
+        if not names(gameplay_checks):
+            gameplay_checks = []
+        if not names(methods) or any('input_' + m not in gameplay_checks for m in set(methods) - BROWSER_INPUTS):
+            missing.append('device.inputMethods')
+        if type(device.get('isMobile')) is not bool:
+            missing.append('device.isMobile')
+        if not number(device.get('deviceScaleFactor')) or device['deviceScaleFactor'] <= 0:
+            missing.append('device.deviceScaleFactor')
+        if not names((budget.get('stabilityTargets') or {}).get('trackedResources'), allow_empty=True):
+            missing.append('stabilityTargets.trackedResources')
+        growth = (budget.get('stabilityTargets') or {}).get('resourceGrowthMax', 0)
+        if not number(growth) or growth < 0:
+            missing.append('stabilityTargets.resourceGrowthMax')
+        if not number(budget.get('visualScoreMin')) or not 1 <= budget['visualScoreMin'] <= 5:
+            missing.append('visualScoreMin')
+    else:
+        if not names(feedback.get('requiredChannels')):
+            missing.append('feedbackRules.requiredChannels')
+        for key in ['minAcceptedActions', 'minPresentedFrames', 'maxFirstFrameDelay']:
+            if type(feedback.get(key)) is not int or feedback[key] < 1:
+                missing.append('feedbackRules.' + key)
     active = (budget.get('stabilityTargets') or {}).get('activePlaySeconds')
     if type(active) not in (int, float) or not math.isfinite(active) or active <= 0:
         missing.append('stabilityTargets.activePlaySeconds')
-    gate(report, 'validation_profile', 'passed' if version == 3 and not missing else 'unverified',
+    gate(report, 'validation_profile', 'passed' if version in (3, 4) and not missing else 'unverified',
          {'schemaVersion': version, 'missingOrInvalid': sorted(set(missing))})
 
 
@@ -194,25 +232,39 @@ METRICS = """() => {
     internalWidth:g.render.resolution.x, internalHeight:g.render.resolution.y,
     sceneId:'reference', dynamicResolution:null};
 }"""
-GPU = """backend => {
+DEVICE_STATE = """() => ({dpr: devicePixelRatio, touchPoints: navigator.maxTouchPoints,
+  coarsePointer: matchMedia('(pointer:coarse)').matches, viewport: [innerWidth, innerHeight]})"""
+GPU = """options => {
+  const backend = typeof options === 'string' ? options : options.backend;
   const canvas = document.querySelector('canvas[data-game-canvas]') || document.querySelector('canvas#view') || document.querySelector('canvas');
   const result = {backend, available: false, canvas: !!canvas, renderer: 'unknown', identified: false};
-  if (!canvas || typeof canvas.getContext !== 'function') return result;
-  // Canvas 2D and WebGL cannot share a context on the same canvas. In 2D mode
-  // the separate probe identifies the host adapter, not the 2D acceleration path.
-  const is2d = backend === 'canvas2d';
-  if (is2d) result.available = !!canvas.getContext('2d');
-  const probe = is2d ? document.createElement('canvas') : canvas;
-  result.adapterSource = is2d ? 'separate WebGL canvas' : 'game WebGL context';
+  if (backend === 'dom' || backend === 'svg') {
+    const visible = el => {
+      const box = el?.getBoundingClientRect();
+      return !!(box?.width && box.height && getComputedStyle(el).visibility !== 'hidden');
+    };
+    const root = backend === 'svg' ? document.querySelector('svg[data-game-root]') || document.querySelector('svg')
+      : document.querySelector('[data-game-root]') || document.querySelector('main') ||
+        (visible(document.body) ? document.body : [...document.body.children].find(visible));
+    result.available = visible(root);
+    result.surface = root?.tagName || null;
+  } else {
+    if (!canvas || typeof canvas.getContext !== 'function') return result;
+    if (backend === 'canvas2d') result.available = !!canvas.getContext('2d');
+  }
+  const separate = backend !== 'webgl';
+  if (separate && options.onDemand) return result;
+  const probe = separate ? document.createElement('canvas') : canvas;
+  result.adapterSource = separate ? 'separate WebGL canvas' : 'game WebGL context';
   const gl = probe.getContext('webgl2') || probe.getContext('webgl');
   result.webgl = !!gl;
   if (!gl) return result;
-  if (!is2d) result.available = true;
+  if (!separate) result.available = true;
   const ext = gl.getExtension('WEBGL_debug_renderer_info');
   result.renderer = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
   result.identified = !!ext;
   result.version = gl.getParameter(gl.VERSION);
-  if (is2d) gl.getExtension('WEBGL_lose_context')?.loseContext();
+  if (separate) gl.getExtension('WEBGL_lose_context')?.loseContext();
   return result;
 }"""
 
@@ -230,6 +282,54 @@ def wait_for_observation(page, expression, timeout_seconds):
     }})""", timeout_seconds * 1000)
 
 
+def measure_frames(page, budget, report, before, has_contract, hardware, timeout):
+    page.evaluate("""seconds => {
+      window.__SKILL_SAMPLE__={done:false,ms:[]};
+      let start=null,last=null;
+      function tick(now) {
+        if(start===null) start=now;
+        if(last!==null) window.__SKILL_SAMPLE__.ms.push(now-last);
+        last=now;
+        if(now-start < seconds*1000) requestAnimationFrame(tick);
+        else window.__SKILL_SAMPLE__.done=true;
+      }
+      requestAnimationFrame(tick);
+    }""", budget['sampleSeconds'])
+    wait_for_observation(page, 'window.__SKILL_SAMPLE__.done', timeout)
+    samples = page.evaluate('window.__SKILL_SAMPLE__.ms')
+    after = page.evaluate(METRICS)
+    perf = {'samples': len(samples), 'meanMs': statistics.mean(samples) if samples else None,
+            'before': before, 'after': after, 'hardware': hardware}
+    if samples:
+        perf.update({'fps': 1000 / statistics.mean(samples),
+                     'p50Ms': percentile(samples, .5), 'p95Ms': percentile(samples, .95),
+                     'p99Ms': percentile(samples, .99)})
+    report['performance'] = perf
+    advancing = isinstance(before.get('frame'), (int, float)) and isinstance(after.get('frame'), (int, float))
+    gate(report, 'render_advances', ('passed' if after['frame'] > before['frame'] else 'failed')
+         if advancing else 'unverified', {'before': before.get('frame'), 'after': after.get('frame')})
+    frame_delta = after['frame'] - before['frame'] if advancing else 0
+    load_ok, load_evidence = benchmark_load(budget, after)
+    if budget.get('schemaVersion', 1) >= 3:
+        started_loaded, start_evidence = benchmark_load(budget, before)
+        load_ok = started_loaded and load_ok
+        gate(report, 'representative_load', 'passed' if has_contract and load_ok else 'unverified',
+             {'start': start_evidence, 'end': load_evidence})
+    resolution_ok = (after.get('internalWidth', 0) >= budget['viewport']['width'] * budget['internalResolutionMinScale'] and
+                     after.get('internalHeight', 0) >= budget['viewport']['height'] * budget['internalResolutionMinScale'])
+    comparable = hardware and has_contract and load_ok and resolution_ok and frame_delta >= len(samples) * .9 and after.get('dynamicResolution') is False and (
+        after.get('sceneId') == budget['benchmarkScene'] and after.get('quality') == budget['quality']
+        and before.get('internalWidth') == after.get('internalWidth')
+        and before.get('internalHeight') == after.get('internalHeight')
+        and bool(after.get('internalWidth')) and bool(after.get('internalHeight')))
+    enough = len(samples) >= budget['minFrameSamples']
+    passed = enough and perf.get('fps', 0) >= budget['fpsMin'] and (
+        perf.get('p95Ms', math.inf) <= budget['p95FrameMsMax'] and
+        perf.get('p99Ms', math.inf) <= budget['p99FrameMsMax'])
+    gate(report, 'hardware_frame_budget', ('passed' if passed else 'failed') if comparable else 'unverified', perf)
+    return after
+
+
 def browser_checks(args, budget, report, out):
     from playwright.sync_api import sync_playwright
 
@@ -243,6 +343,10 @@ def browser_checks(args, budget, report, out):
     entry = origin + '/' + quote(args.html.name)
     errors, console_errors = [], []
     network = None
+    version = budget.get('schemaVersion', 1)
+    device = budget['device'] if version == 4 else {}
+    methods = device.get('inputMethods', [])
+    input_samples = set()
     try:
         with sync_playwright() as pw:
             launch = {'headless': not args.headed, 'args': ['--no-sandbox']}
@@ -252,9 +356,21 @@ def browser_checks(args, budget, report, out):
                 launch['args'] += ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
             browser = pw.chromium.launch(**launch)
             report['browserVersion'] = browser.version
-            context = browser.new_context(viewport=budget['viewport'], device_scale_factor=1,
-                                          service_workers='block')
+            context = browser.new_context(viewport=budget['viewport'], service_workers='block',
+                                          device_scale_factor=device.get('deviceScaleFactor', 1),
+                                          is_mobile=device.get('isMobile', False), has_touch='touch' in methods)
             page = context.new_page()
+            if version == 4:
+                def record_input(method, dpr, touch_points):
+                    input_samples.add((method, dpr, touch_points))
+                page.expose_function('__skillObservedInput', record_input)
+                page.add_init_script("""for (const event of ['pointerdown', 'keydown', 'wheel']) {
+                  addEventListener(event, e => {
+                    if (!e.isTrusted) return;
+                    const method = event === 'keydown' ? 'keyboard' : event === 'wheel' ? 'mouse' : e.pointerType;
+                    if (method) window.__skillObservedInput(method, devicePixelRatio, navigator.maxTouchPoints);
+                  }, {capture:true, passive:true});
+                }""")
             page.set_default_timeout(args.timeout * 1000)
             page.add_init_script("window.__SKILL_BOOT_ERROR__=null; addEventListener('error', e => {window.__SKILL_BOOT_ERROR__=String(e.message || e.error || 'script error');});")
             page.on('pageerror', lambda e: errors.append(str(e)))
@@ -275,15 +391,19 @@ def browser_checks(args, budget, report, out):
             if fatal:
                 return
             backend = budget.get('renderBackend', 'webgl') if budget.get('schemaVersion', 1) >= 3 else 'webgl'
-            gpu = page.evaluate(GPU, backend)
+            gpu = page.evaluate(GPU, {'backend': backend, 'onDemand': version == 4 and budget['renderMode'] == 'on-demand'})
             report['gpu'] = gpu
-            hardware = gpu['available'] and gpu['identified'] and not args.software and not re.search(
+            hardware = gpu['available'] and gpu['identified'] and not args.software and not device.get('isMobile') and not re.search(
                 r'SwiftShader|llvmpipe|Software|softpipe|unknown', gpu['renderer'], re.I)
             renderer_gate = 'render_backend' if budget.get('schemaVersion', 1) >= 3 else 'webgl'
             gate(report, renderer_gate, 'passed' if gpu['available'] else 'failed', gpu)
-            gate(report, 'hardware_boot_budget', ('passed' if boot_ms <= budget['bootMsMax'] else 'failed')
-                 if hardware else 'unverified', {'bootMs': round(boot_ms, 1), 'max': budget['bootMsMax'],
-                                                'hardware': hardware})
+            boot_status = 'passed' if boot_ms <= budget['bootMsMax'] else 'failed'
+            gate(report, 'browser_boot_budget' if version == 4 else 'hardware_boot_budget',
+                 boot_status if version == 4 or hardware else 'unverified',
+                 {'bootMs': round(boot_ms, 1), 'max': budget['bootMsMax'], 'hardware': hardware})
+            if version == 4:
+                report['device'] = page.evaluate(DEVICE_STATE)
+                report['device']['profile'] = device
             has_contract = page.evaluate('!!window.__GAME_TEST__')
             gate(report, 'diagnostics_contract', 'passed' if has_contract else 'unverified',
                  {'adapter': args.adapter, 'contractPresent': has_contract})
@@ -298,7 +418,8 @@ def browser_checks(args, budget, report, out):
                 measures = image_metrics(screenshot)
                 report['screenshots'].append({'id': scene_id, 'path': str(screenshot),
                                               'sha256': sha(screenshot), 'metrics': measures})
-                gate(report, 'nonblank_' + scene_id, 'passed' if measures['lumaStdDev'] > 2 else 'failed', measures)
+                if version < 4:
+                    gate(report, 'nonblank_' + scene_id, 'passed' if measures['lumaStdDev'] > 2 else 'failed', measures)
             gate(report, 'required_views', 'passed' if set(scenes) >= set(budget['requiredScenes']) else 'unverified', scenes)
             if has_contract:
                 audit = page.evaluate('() => window.__GAME_TEST__.audit()')
@@ -311,54 +432,19 @@ def browser_checks(args, budget, report, out):
                 page.evaluate('(id) => window.__GAME_TEST__.setScene(id)', budget['benchmarkScene'])
             page.wait_for_timeout(budget['warmupSeconds'] * 1000)
             before = page.evaluate(METRICS)
-            page.evaluate("""seconds => {
-              window.__SKILL_SAMPLE__={done:false,ms:[]};
-              let start=null,last=null;
-              function tick(now) {
-                if(start===null) start=now;
-                if(last!==null) window.__SKILL_SAMPLE__.ms.push(now-last);
-                last=now;
-                if(now-start < seconds*1000) requestAnimationFrame(tick);
-                else window.__SKILL_SAMPLE__.done=true;
-              }
-              requestAnimationFrame(tick);
-            }""", budget['sampleSeconds'])
-            wait_for_observation(page, 'window.__SKILL_SAMPLE__.done', args.timeout)
-            samples = page.evaluate('window.__SKILL_SAMPLE__.ms')
-            after = page.evaluate(METRICS)
-            perf = {'samples': len(samples), 'meanMs': statistics.mean(samples) if samples else None,
-                    'before': before, 'after': after, 'hardware': hardware}
-            if samples:
-                perf.update({'fps': 1000 / statistics.mean(samples),
-                             'p50Ms': percentile(samples, .5), 'p95Ms': percentile(samples, .95),
-                             'p99Ms': percentile(samples, .99)})
-            report['performance'] = perf
-            advancing = isinstance(before.get('frame'), (int, float)) and isinstance(after.get('frame'), (int, float))
-            gate(report, 'render_advances', ('passed' if after['frame'] > before['frame'] else 'failed')
-                 if advancing else 'unverified', {'before': before.get('frame'), 'after': after.get('frame')})
-            frame_delta = after['frame'] - before['frame'] if advancing else 0
-            load_ok, load_evidence = benchmark_load(budget, after)
-            if budget.get('schemaVersion', 1) >= 3:
-                started_loaded, start_evidence = benchmark_load(budget, before)
-                load_ok = started_loaded and load_ok
-                gate(report, 'representative_load', 'passed' if has_contract and load_ok else 'unverified',
-                     {'start': start_evidence, 'end': load_evidence})
-            resolution_ok = (after.get('internalWidth', 0) >= budget['viewport']['width'] * budget['internalResolutionMinScale'] and
-                             after.get('internalHeight', 0) >= budget['viewport']['height'] * budget['internalResolutionMinScale'])
-            comparable = hardware and has_contract and load_ok and resolution_ok and frame_delta >= len(samples) * .9 and after.get('dynamicResolution') is False and (
-                after.get('sceneId') == budget['benchmarkScene'] and after.get('quality') == budget['quality']
-                and before.get('internalWidth') == after.get('internalWidth')
-                and before.get('internalHeight') == after.get('internalHeight')
-                and bool(after.get('internalWidth')) and bool(after.get('internalHeight')))
-            enough = len(samples) >= budget['minFrameSamples']
-            passed = enough and perf.get('fps', 0) >= budget['fpsMin'] and (
-                perf.get('p95Ms', math.inf) <= budget['p95FrameMsMax'] and
-                perf.get('p99Ms', math.inf) <= budget['p99FrameMsMax'])
-            gate(report, 'hardware_frame_budget', ('passed' if passed else 'failed') if comparable else 'unverified', perf)
+            if version == 4 and budget['renderMode'] == 'on-demand':
+                loaded, evidence = benchmark_load(budget, before)
+                in_scene = before.get('sceneId') == budget['benchmarkScene']
+                gate(report, 'representative_load', 'passed' if has_contract and in_scene and loaded else 'unverified',
+                     {'scene': before.get('sceneId'), 'workload': evidence})
+                report['performance'] = {'mode': 'on-demand', 'basis': 'action_response', 'benchmark': before}
+                after = before
+            else:
+                after = measure_frames(page, budget, report, before, has_contract, hardware, args.timeout)
             if backend == 'webgl':
                 for metric, maximum in [('drawCalls', 'drawCallsMax'), ('submittedTriangles', 'submittedTrianglesMax')]:
                     actual = after.get(metric)
-                    valid = isinstance(actual, (int, float)) and math.isfinite(actual) and actual > 0
+                    valid = number(actual) and (actual >= 0 if version == 4 and metric == 'submittedTriangles' else actual > 0)
                     gate(report, metric, ('passed' if actual <= budget[maximum] else 'failed')
                          if valid and has_contract else 'unverified', {'actual': actual, 'max': budget[maximum],
                                                                      'scene': after.get('sceneId')})
@@ -373,11 +459,31 @@ def browser_checks(args, budget, report, out):
                 else:
                     gameplay = module.run(page)
             measured_checks(report, 'gameplay_', gameplay, budget['requiredGameplayChecks'])
+            if version == 4:
+                actual = report['device']
+                end = page.evaluate(DEVICE_STATE)
+                observed = {sample[0] for sample in input_samples}
+                samples = [{'method': m, 'dpr': d, 'touchPoints': t} for m, d, t in sorted(input_samples)]
+                settings_match = all(abs(s['dpr'] - device['deviceScaleFactor']) < .01
+                                     and ('touch' not in methods or s['touchPoints'] > 0)
+                                     for s in [actual, *samples, end])
+                custom = set(methods) - BROWSER_INPUTS
+                statuses = {g['id']: g['status'] for g in report['gates']}
+                project_inputs = {m: statuses.get('gameplay_input_' + m, 'unverified') for m in custom}
+                confirmed = {m for m, status in project_inputs.items() if status == 'passed'}
+                absent = sorted(set(methods) - observed - confirmed)
+                wrong = not settings_match or 'failed' in project_inputs.values()
+                gate(report, 'player_input', 'failed' if wrong else 'unverified' if absent else 'passed',
+                     {'start': actual, 'end': end, 'atInput': samples, 'observed': sorted(observed),
+                      'projectChecks': project_inputs, 'missing': absent})
             if budget.get('feedbackRules'):
-                feedback = audit_feedback(gameplay.get('feedback', {}), budget['feedbackRules'])
-                gate(report, 'action_feedback_submission', feedback['status'], feedback['evidence'])
+                audit_fn = audit_response if version == 4 else audit_feedback
+                feedback = audit_fn(gameplay.get('feedback', {}), budget['feedbackRules'])
+                gate(report, 'action_response' if version == 4 else 'action_feedback_submission',
+                     feedback['status'], feedback['evidence'])
             if budget.get('stabilityTargets'):
-                stability = audit_stability(gameplay.get('stability', {}), budget['stabilityTargets'], report['artifact']['sha256'])
+                stability = audit_stability(gameplay.get('stability', {}), budget['stabilityTargets'],
+                                            report['artifact']['sha256'], budget['renderMode'] if version == 4 else None)
                 gate(report, 'stability_contract', stability['status'], stability['evidence'])
             report['motionEvidence'] = []
             for capture in gameplay.get('captures', []):
@@ -417,7 +523,7 @@ def main():
     budget = json.loads(args.budget.read_text())
     report = {'schemaVersion': 1, 'validatorSha256': sha(Path(__file__)),
               'toolSha256': {name: sha(Path(__file__).with_name(name)) for name in
-                             ['network_audit.py', 'feedback_audit.py', 'stability_audit.py']},
+                             ['network_audit.py', 'feedback_audit.py', 'response_audit.py', 'stability_audit.py']},
               'budgetSha256': sha(args.budget), 'budget': budget, 'gates': [], 'screenshots': [],
               'releaseStatus': 'unverified', 'visualReview': 'pending'}
     try:
@@ -425,6 +531,8 @@ def main():
         static_checks(args.html, budget, report)
         if args.static_only:
             gate(report, 'runtime', 'unverified', 'Static-only invocation')
+        elif budget.get('schemaVersion') == 4 and report['gates'][0]['status'] != 'passed':
+            gate(report, 'runtime', 'unverified', 'Complete the declared project profile before running it')
         else:
             browser_checks(args, budget, report, out)
     except Exception as exc:

@@ -1,7 +1,8 @@
 {
   "schemaVersion": 2,
   "player": "填写目标玩家与输入方式",
-  "deviceAndContext": "明确 GPU、屏幕、输入方式及单局时长；未知项保留未知",
+  "deviceAndContext": "写明目标设备、玩家实际使用的输入、游玩环境和单局时长",
+  "playerJudgment": "玩家靠什么分辨两种情境？把各自可观测的结果、出现时机和需要保留的时间写入预算的 feedbackRules。",
   "coreLoop": "REPLACE_WITH_PLAYER_GOAL_AND_ACTIONS",
   "constraints": {
     "singleHtml": true,

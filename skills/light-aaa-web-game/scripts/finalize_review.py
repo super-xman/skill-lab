@@ -15,6 +15,9 @@ def finalize(report_path, review_path):
     report_path, review_path = Path(report_path).resolve(), Path(review_path).resolve()
     report = json.loads(report_path.read_text())
     review = json.loads(review_path.read_text())
+    budget = report['budget']
+    version = budget.get('schemaVersion', 1)
+    on_demand = version == 4 and budget.get('renderMode') == 'on-demand'
     failures = []
     unverified = []
     if review.get('reportSha256') != digest(report_path):
@@ -33,17 +36,25 @@ def finalize(report_path, review_path):
             failures.append('Automated gate: ' + check['id'])
         elif check.get('status') != 'passed':
             unverified.append('Automated gate: ' + check['id'])
-    if report['budget'].get('schemaVersion', 1) >= 2:
-        required = {'validation_profile', 'boot', 'offline_resources', 'action_feedback_submission', 'stability_contract',
-                    'hardware_boot_budget', 'hardware_frame_budget', 'no_runtime_errors'}
-        required.update('gameplay_' + name for name in report['budget']['requiredGameplayChecks'])
-        if report['budget'].get('schemaVersion', 1) >= 3:
+    if version >= 2:
+        required = {'validation_profile', 'boot', 'offline_resources', 'stability_contract', 'no_runtime_errors'}
+        if version == 4:
+            required.update({'browser_boot_budget', 'player_input', 'action_response'})
+        else:
+            required.update({'hardware_boot_budget', 'action_feedback_submission'})
+        if not on_demand:
+            required.add('hardware_frame_budget')
+        required.update('gameplay_' + name for name in budget['requiredGameplayChecks'])
+        if version >= 3:
             required.update({'rawBytes', 'gzipBytes', 'declared_resources_self_contained', 'diagnostics_contract',
-                             'render_backend', 'representative_load', 'required_views', 'render_advances'})
-            required.update('nonblank_' + name for name in report['budget']['requiredScenes'])
-            if report['budget'].get('renderBackend', 'webgl') == 'webgl':
+                             'render_backend', 'representative_load', 'required_views'})
+            if not on_demand:
+                required.add('render_advances')
+            if version == 3:
+                required.update('nonblank_' + name for name in budget['requiredScenes'])
+            if budget.get('renderBackend', 'webgl') == 'webgl':
                 required.update({'drawCalls', 'submittedTriangles'})
-            required.update('resource_' + name for name in report['budget']['requiredResourceChecks'])
+            required.update('resource_' + name for name in budget['requiredResourceChecks'])
         missing = required - {g['id'] for g in gates}
         unverified.extend('Missing required gate: ' + name for name in sorted(missing))
     if not review.get('reviewer') or review['reviewer'].startswith('REPLACE'):
@@ -54,29 +65,35 @@ def finalize(report_path, review_path):
         failures.append('Critical visual defects remain')
     shots = {s['id']: s for s in report.get('screenshots', [])}
     reviews = {s['id']: s for s in review.get('scenes', [])}
-    for scene in report['budget']['requiredScenes']:
+    dimensions = (budget.get('visualDimensions', []) if version == 4 else
+                  ['composition', 'materials', 'lighting', 'readability', 'artifactFree'])
+    for scene in budget['requiredScenes']:
         shot, item = shots.get(scene), reviews.get(scene)
-        if not shot or not item:
+        if not shot or (dimensions and not item):
             unverified.append('Missing view or review: ' + scene)
             continue
         try:
-            if digest(shot['path']) != shot['sha256'] or item.get('screenshotSha256') != shot['sha256']:
+            if digest(shot['path']) != shot['sha256'] or (dimensions and item.get('screenshotSha256') != shot['sha256']):
                 failures.append('Screenshot hash mismatch: ' + scene)
         except OSError:
             failures.append('Screenshot missing: ' + scene)
+        if not dimensions:
+            continue
         evidence = item.get('evidence', '').strip()
         if len(evidence) < 12 or evidence.startswith(('Describe visible', 'REPLACE')):
             unverified.append('Missing specific visual evidence: ' + scene)
-        for dimension in ['composition', 'materials', 'lighting', 'readability', 'artifactFree']:
+        for dimension in dimensions:
             score = item.get('scores', {}).get(dimension)
-            if type(score) not in [int, float] or not report['budget']['visualScoreMin'] <= score <= 5:
+            if version == 4 and score is None:
+                unverified.append(f'Missing declared visual score: {scene}/{dimension}')
+            elif type(score) not in [int, float] or not budget['visualScoreMin'] <= score <= 5:
                 failures.append(f'Visual score below target: {scene}/{dimension}')
     for scene in report['budget'].get('requiredMotionReviews', []):
         captures = [c for c in report.get('motionEvidence', []) if c.get('id') == scene]
         item = next((s for s in review.get('motionScenes', []) if s.get('id') == scene), {})
         video = any(Path(c['path']).suffix.lower() in ['.webm', '.mp4'] for c in captures)
         distinct_frames = len({c['sha256'] for c in captures})
-        if not captures or (not video and distinct_frames < 3):
+        if not captures or (not video and distinct_frames < (2 if on_demand else 3)):
             unverified.append('Missing video or frame sequence: ' + scene)
             continue
         hashes = item.get('captureSha256', [])

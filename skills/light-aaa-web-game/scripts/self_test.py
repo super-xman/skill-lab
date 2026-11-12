@@ -79,6 +79,10 @@ class ValidatorTests(unittest.TestCase):
 class GameplayContractTests(unittest.TestCase):
     def setUp(self):
         self.budget = json.loads((SKILL / 'templates/budgets.json').read_text())
+        # Keep the v3 frame-based contract under regression as new projects move to v4.
+        self.budget.update(schemaVersion=3, feedbackRules={'requiredChannels': ['result'],
+                           'minAcceptedActions': 12, 'minPresentedFrames': 2, 'maxFirstFrameDelay': 1})
+        self.budget['stabilityTargets']['postWarmupGpuResourceGrowthMax'] = 0
 
     def test_puzzle_action_needs_actual_rendered_orientation(self):
         rules = self.budget['feedbackRules'] | {'requiredChannels': ['orientation']}

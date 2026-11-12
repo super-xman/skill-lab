@@ -1,7 +1,9 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "profile": "desktop-medium",
   "renderBackend": "webgl",
+  "renderMode": "continuous",
+  "device": {"inputMethods": ["mouse"], "isMobile": false, "deviceScaleFactor": 1},
   "rawBytesMax": 2097152,
   "gzipBytesMax": 716800,
   "viewport": {"width": 1280, "height": 720},
@@ -10,7 +12,7 @@
   "requiredScenes": ["overview", "detail", "core_play"],
   "benchmarkScene": "core_play",
   "benchmarkLoad": {"activeElements": 1},
-  "requiredResourceChecks": ["geometry", "materials", "audio", "determinism", "reachability"],
+  "requiredResourceChecks": ["reachability"],
   "internalResolutionMinScale": 0.8,
   "warmupSeconds": 3,
   "sampleSeconds": 10,
@@ -22,13 +24,19 @@
   "drawCallsMax": 600,
   "submittedTrianglesMax": 3500000,
   "visualScoreMin": 4,
-  "requiredMotionReviews": ["primary_action", "progression", "recovery"],
+  "visualDimensions": ["composition", "readability", "artifactFree"],
+  "requiredMotionReviews": ["primary_action"],
   "requiredExperienceGoals": ["first_session", "action_clarity", "navigation", "recovery", "comfort", "intended_experience"],
   "feedbackRules": {
-    "requiredChannels": ["result"],
     "minAcceptedActions": 12,
-    "minPresentedFrames": 2,
-    "maxFirstFrameDelay": 1
+    "channels": {
+      "result": {
+        "source": "visual",
+        "expected": {"first_choice": "first", "second_choice": "second"},
+        "maxDelayMs": 180,
+        "holdMs": 120
+      }
+    }
   },
   "stabilityTargets": {
     "independentColdStarts": 3,
@@ -36,10 +44,10 @@
     "activePlaySeconds": 60,
     "soakWallSeconds": 300,
     "testFrameCaps": [60, 30, 15],
-    "postWarmupGpuResourceGrowthMax": 0
+    "trackedResources": ["listeners"],
+    "resourceGrowthMax": 0
   },
   "requiredGameplayChecks": [
-    "core_action_result", "objective_progression", "session_recovery",
-    "input_lifecycle", "quality_fallback"
+    "core_action_result", "objective_progression", "session_recovery"
   ]
 }

@@ -6,7 +6,7 @@
 export function installGameDiagnostics(game) {
   if (new URLSearchParams(location.search).get('test') !== '1') return;
   window.__GAME_TEST__ = {
-    version: 3,
+    version: 4,
     get ready() { return game.isPlayable; }, // after required generation/compilation
     get fatal() { return game.fatalError || null; },
     async setScene(id) {
@@ -17,7 +17,11 @@ export function installGameDiagnostics(game) {
     metrics() {
       // Cached counters. No synchronous GPU readback here.
       // WebGL totals include all world, shadow, reflection and post passes.
-      // Canvas 2D projects can omit drawCalls and submittedTriangles.
+      // DOM, SVG and Canvas 2D omit WebGL counters. On-demand views only
+      // need sceneId and workload here; the scenario measures input-to-output latency.
+      if (game.renderMode === 'on-demand' && game.renderBackend !== 'webgl') {
+        return {sceneId: game.testScenes.current, workload: game.testScenes.measureWorkload()};
+      }
       return {
         frame: game.frame,
         sceneId: game.testScenes.current,
@@ -45,14 +49,12 @@ export function installGameDiagnostics(game) {
       return game.snapshotForTests();
     },
     feedbackObservations() {
-      // Store bounded raw observations from actual accepted inputs and completed
-      // main display passes. Collect renders independently of accepted inputs.
-      // actions: [{id:'session-1/action-42', acceptedAtMs:performance.now(),
-      //          acceptedFrame:lastCompletedFrame, expectedChannels:['result']}]
-      // renders: [{actionId:'session-1/action-42', channel:'result',
-      //            frame:completedFrame, presentedAtMs:performance.now()}]
-      // Two different passes of the same frame count only once. Submission is
-      // not proof of on-screen visibility. Capture and inspect final frames too.
+      // Correlate real inputs with independent reads of the player-facing output.
+      // actions: [{id:'turn-1', condition:'first_choice', acceptedAtMs:100}]
+      // observations: [{actionId:'turn-1', channel:'result', source:'visual',
+      //                 atMs:116, value:'first'}]
+      // For persistent output, read it again after the declared hold time.
+      // For audio, sample the playback path; for DOM, read displayed content.
       return game.feedbackLog.snapshot();
     },
     resourceCounts() {

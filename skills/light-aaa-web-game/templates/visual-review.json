@@ -9,8 +9,6 @@
       "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
       "scores": {
         "composition": 0,
-        "materials": 0,
-        "lighting": 0,
         "readability": 0,
         "artifactFree": 0
       },
@@ -22,8 +20,6 @@
       "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
       "scores": {
         "composition": 0,
-        "materials": 0,
-        "lighting": 0,
         "readability": 0,
         "artifactFree": 0
       },
@@ -35,8 +31,6 @@
       "screenshotSha256": "REPLACE_WITH_SCREENSHOT_SHA256",
       "scores": {
         "composition": 0,
-        "materials": 0,
-        "lighting": 0,
         "readability": 0,
         "artifactFree": 0
       },
@@ -47,22 +41,6 @@
   "motionScenes": [
     {
       "id": "primary_action",
-      "captureSha256": [],
-      "visibleFeedback": false,
-      "timingAndContinuity": false,
-      "noBlockingArtifacts": false,
-      "evidence": ""
-    },
-    {
-      "id": "progression",
-      "captureSha256": [],
-      "visibleFeedback": false,
-      "timingAndContinuity": false,
-      "noBlockingArtifacts": false,
-      "evidence": ""
-    },
-    {
-      "id": "recovery",
       "captureSha256": [],
       "visibleFeedback": false,
       "timingAndContinuity": false,
