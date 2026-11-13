@@ -1,6 +1,6 @@
 ---
 name: light-aaa-web-game
-description: Build and verify lightweight, AAA-style browser games across genres. Use for complete single-file offline Web games, procedural game assets, and improving an existing game's visual quality, playability or performance within a size budget.
+description: Build and verify lightweight, AAA-style browser games across genres. Use for complete single-file offline Web games, procedural game assets, and improving an existing game's visual quality, playability or performance while keeping delivery lightweight.
 metadata:
   version: "1"
 ---
@@ -20,7 +20,7 @@ metadata:
 ## 体积、画质与手感
 
 - 成品为一个 `dist/game.html`。除首次取得 HTML 外，运行时额外网络请求须为零，包括同源请求。内联引擎、代码、样式和必要资源，或在本地生成。开发期保留模块化源码和依赖许可证。见[零网络请求规范](references/zero-network.md)。
-- 桌面默认预算为原始 HTML ≤ 2 MiB、gzip ≤ 700 KiB，优化目标为 1.5 MiB / 500 KiB。冷启动至可操作默认 ≤ 8 秒。持续渲染的桌面作品在约定真实 GPU、1280×720 中档和代表负载下，默认平均 ≥ 55 帧/秒、p95 帧间隔 ≤ 25 ms、p99 ≤ 50 ms。移动端持续渲染默认目标为 30 帧/秒，按目标设备实测。按需更新的作品测操作后多久出现正确结果，以及等待后它是否仍然可辨。保留项目已有的更严格预算。
+- 尽可能轻量。记录原始 HTML 和 gzip 字节数，优先压缩或复用玩家难以察觉差异的资源，为有明显体验收益的细节保留体积。只有用户或交付平台明确给出文件大小上限时，才把它列入验收。冷启动至可操作默认 ≤ 8 秒。持续渲染的桌面作品在约定真实 GPU、1280×720 中档和代表负载下，默认平均 ≥ 55 帧/秒、p95 帧间隔 ≤ 25 ms、p99 ≤ 50 ms。移动端持续渲染默认目标为 30 帧/秒，按目标设备实测。按需更新的作品测操作后多久出现正确结果，以及等待后它是否仍然可辨。维护既有作品时核对预算来源，沿用明确约定的限制，移除旧模板自动带入的文件大小上限。
 - 按视角、画风和表现方式选择 WebGL、Canvas 2D、HTML/CSS 或 SVG。使用 WebGL 场景时检查轮廓、尺度、主光和材质，再比较后期效果，全管线默认每帧 ≤ 600 次绘制、≤ 350 万提交三角形。排版、听觉或图形变化承担主要体验时，把资源留给玩家赖以判断的线索。按需查[架构与生成配方](references/architecture.md)与[资源审计辅助函数](scripts/audit_resources.mjs)。
 - 对核心操作分别验证输入被接受、规则生效，以及玩家能从实际输出分辨结果。用同一时钟记录输入和首次呈现或播放。需要保留的结果稍后再读一次。按作品实际使用的设备重放操作，记录每种声明的输入。
 

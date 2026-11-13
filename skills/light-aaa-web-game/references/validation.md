@@ -10,6 +10,7 @@
 
 | 字段 | 对本作做的选择 |
 | --- | --- |
+| `rawBytesMax`、`gzipBytesMax` | 可按用户约定或交付平台的限制单独配置，以字节为单位。未填写时仍报告实际原始大小和 gzip 大小，体积仅作优化依据。 |
 | `device` | 设置 `inputMethods`、`isMobile`、`deviceScaleFactor` 及外层 `viewport`。标准驱动记录实际发生的 `mouse`、`keyboard`、`pen` 或 `touch` 输入。触屏场景用 `tap()` 走完核心操作。其他输入方式在 `requiredGameplayChecks` 中声明 `input_<名称>`，由场景驱动在适用设备上取证。多个目标设备各跑一份配置。 |
 | `renderBackend` | 可选 `webgl`、`canvas2d`、`dom` 或 `svg`。多个画布用 `data-game-canvas` 标记主画布，HTML 或独立 SVG 作品可用 `data-game-root` 标记实际游玩区域。 |
 | `renderMode` | 持续模拟或动画用 `continuous` 测帧节奏。输入、事件才触发重绘的作品用 `on-demand` 测输入至结果的时间和结果是否保持。按需作品仍可评审转场动画。 |

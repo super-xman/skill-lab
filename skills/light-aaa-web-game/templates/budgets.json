@@ -4,8 +4,6 @@
   "renderBackend": "webgl",
   "renderMode": "continuous",
   "device": {"inputMethods": ["mouse"], "isMobile": false, "deviceScaleFactor": 1},
-  "rawBytesMax": 2097152,
-  "gzipBytesMax": 716800,
   "viewport": {"width": 1280, "height": 720},
   "quality": "medium",
   "seed": 4207,

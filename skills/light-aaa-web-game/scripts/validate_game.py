@@ -186,8 +186,13 @@ def static_checks(path, budget, report):
                           'gzipBytes': len(gzip.compress(raw, mtime=0)), 'gzipLevel': 9}
     for metric, limit in [('rawBytes', 'rawBytesMax'), ('gzipBytes', 'gzipBytesMax')]:
         actual = report['artifact'][metric]
-        gate(report, metric, 'passed' if actual <= budget[limit] else 'failed',
-             {'actual': actual, 'max': budget[limit]})
+        maximum = budget.get(limit)
+        if maximum is None:
+            gate(report, metric, 'passed', {'actual': actual, 'mode': 'measurement'})
+        elif type(maximum) is int and maximum >= 0:
+            gate(report, metric, 'passed' if actual <= maximum else 'failed', {'actual': actual, 'max': maximum})
+        else:
+            gate(report, metric, 'failed', {'actual': actual, 'error': f'{limit} must be a nonnegative integer'})
     gate(report, 'declared_resources_self_contained', 'failed' if parser.refs else 'passed', parser.refs)
 
 

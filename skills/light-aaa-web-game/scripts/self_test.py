@@ -36,9 +36,21 @@ class ValidatorTests(unittest.TestCase):
         self.assertEqual(report['gates'][-1]['status'], 'failed')
         self.assertEqual(len(report['gates'][-1]['evidence']), 2)
 
-    def test_budget_rejects_real_bytes(self):
-        report = self.inspect('<html>你好</html>', rawBytesMax=1)
-        self.assertEqual(report['gates'][0]['status'], 'failed')
+    def test_size_is_measured_without_an_implicit_limit(self):
+        import base64
+        import random
+        data = base64.b64encode(random.Random(2).randbytes(1_700_000)).decode()
+        report = self.inspect('<html><!--' + data + '--></html>')
+        self.assertGreater(report['artifact']['rawBytes'], 2 * 1024**2)
+        self.assertGreater(report['artifact']['gzipBytes'], 700 * 1024)
+        self.assertEqual(aggregate(report['gates']), 'passed')
+        self.assertEqual([g['evidence']['mode'] for g in report['gates'][:2]], ['measurement'] * 2)
+
+    def test_size_limits_can_be_declared_independently(self):
+        for limit, failed_metric in [('rawBytesMax', 'rawBytes'), ('gzipBytesMax', 'gzipBytes')]:
+            with self.subTest(limit=limit):
+                report = self.inspect('<html>你好</html>', **{limit: 1})
+                self.assertEqual([g['id'] for g in report['gates'] if g['status'] == 'failed'], [failed_metric])
 
     def test_missing_evidence_is_unverified(self):
         report = {'gates': []}
