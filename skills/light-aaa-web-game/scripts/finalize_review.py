@@ -14,6 +14,8 @@ def digest(path):
 def finalize(report_path, review_path):
     report_path, review_path = Path(report_path).resolve(), Path(review_path).resolve()
     report = json.loads(report_path.read_text())
+    if report.get('mode') == 'focused':
+        raise ValueError('A focused scene report covers selected checks only. Supply the full report.json.')
     review = json.loads(review_path.read_text())
     budget = report['budget']
     version = budget.get('schemaVersion', 1)

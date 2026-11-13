@@ -3,11 +3,11 @@
 import argparse
 import gzip
 import hashlib
-import importlib.util
 import json
 import math
 import re
 import statistics
+import tempfile
 import threading
 import time
 from functools import partial
@@ -19,6 +19,7 @@ from network_audit import NetworkAudit
 from feedback_audit import audit_feedback
 from response_audit import audit_response, rule_errors, number
 from stability_audit import audit_stability
+from scene_checks import load_driver, run_cases
 
 SKILL = Path(__file__).resolve().parents[1]
 AUDITS = ['geometry', 'materials', 'audio', 'determinism', 'navigation']
@@ -344,7 +345,7 @@ def browser_checks(args, budget, report, out):
     errors, console_errors = [], []
     network = None
     version = budget.get('schemaVersion', 1)
-    device = budget['device'] if version == 4 else {}
+    device = budget.get('device', {}) if version == 4 else {}
     methods = device.get('inputMethods', [])
     input_samples = set()
     try:
@@ -356,6 +357,10 @@ def browser_checks(args, budget, report, out):
                 launch['args'] += ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
             browser = pw.chromium.launch(**launch)
             report['browserVersion'] = browser.version
+            if args.focus:
+                run_cases(browser, entry, args, budget, report, out, wait_for_observation, sha, aggregate)
+                browser.close()
+                return
             context = browser.new_context(viewport=budget['viewport'], service_workers='block',
                                           device_scale_factor=device.get('deviceScaleFactor', 1),
                                           is_mobile=device.get('isMobile', False), has_touch='touch' in methods)
@@ -451,9 +456,7 @@ def browser_checks(args, budget, report, out):
             gameplay = {}
             if args.scenario_script:
                 import inspect
-                spec = importlib.util.spec_from_file_location('game_scenarios', args.scenario_script)
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
+                module = load_driver(args.scenario_script)
                 if 'artifacts_dir' in inspect.signature(module.run).parameters:
                     gameplay = module.run(page, artifacts_dir=out)
                 else:
@@ -497,11 +500,12 @@ def browser_checks(args, budget, report, out):
     finally:
         server.shutdown()
         server.server_close()
-        net = network.result() if network else {'status': 'unverified', 'evidence': 'Browser network audit did not start'}
-        report['requests'] = network.requests if network else []
-        report['errors'] = {'page': errors, 'console': console_errors}
-        gate(report, 'no_runtime_errors', 'failed' if errors or console_errors else 'passed', report['errors'])
-        gate(report, 'offline_resources', net['status'], net['evidence'])
+        if not args.focus:
+            net = network.result() if network else {'status': 'unverified', 'evidence': 'Browser network audit did not start'}
+            report['requests'] = network.requests if network else []
+            report['errors'] = {'page': errors, 'console': console_errors}
+            gate(report, 'no_runtime_errors', 'failed' if errors or console_errors else 'passed', report['errors'])
+            gate(report, 'offline_resources', net['status'], net['evidence'])
 
 
 def main():
@@ -515,33 +519,56 @@ def main():
     parser.add_argument('--static-only', action='store_true')
     parser.add_argument('--adapter', choices=['standard', 'reference'], default='standard')
     parser.add_argument('--scenario-script', type=Path)
+    parser.add_argument('--focus', action='append', metavar='GROUP',
+                        help='Run just this project-defined check group; may be repeated')
     parser.add_argument('--timeout', type=int, default=180)
     args = parser.parse_args()
+    if args.focus and (not args.scenario_script or args.static_only or args.adapter != 'standard'):
+        parser.error('--focus needs --scenario-script and the standard browser adapter')
     args.html = args.html.resolve()
     out = args.out.resolve()
+    if args.focus:
+        out /= 'focused'
     out.mkdir(parents=True, exist_ok=True)
+    if args.focus:
+        out = Path(tempfile.mkdtemp(prefix='run-', dir=out))
     budget = json.loads(args.budget.read_text())
     report = {'schemaVersion': 1, 'validatorSha256': sha(Path(__file__)),
               'toolSha256': {name: sha(Path(__file__).with_name(name)) for name in
-                             ['network_audit.py', 'feedback_audit.py', 'response_audit.py', 'stability_audit.py']},
+                             ['network_audit.py', 'feedback_audit.py', 'response_audit.py', 'stability_audit.py',
+                              'scene_checks.py']},
               'budgetSha256': sha(args.budget), 'budget': budget, 'gates': [], 'screenshots': [],
               'releaseStatus': 'unverified', 'visualReview': 'pending'}
     try:
-        profile_check(budget, report)
-        static_checks(args.html, budget, report)
-        if args.static_only:
-            gate(report, 'runtime', 'unverified', 'Static-only invocation')
-        elif budget.get('schemaVersion') == 4 and report['gates'][0]['status'] != 'passed':
-            gate(report, 'runtime', 'unverified', 'Complete the declared project profile before running it')
-        else:
+        if args.focus:
+            report.update(mode='focused', selected=args.focus, cases=[],
+                          artifact={'path': str(args.html), 'sha256': sha(args.html)},
+                          scenarioSha256=sha(args.scenario_script))
+            report['toolSha256']['scene_probes.py'] = sha(Path(__file__).with_name('scene_probes.py'))
             browser_checks(args, budget, report, out)
+        else:
+            profile_check(budget, report)
+            static_checks(args.html, budget, report)
+            if args.static_only:
+                gate(report, 'runtime', 'unverified', 'Static-only invocation')
+            elif budget.get('schemaVersion') == 4 and report['gates'][0]['status'] != 'passed':
+                gate(report, 'runtime', 'unverified', 'Complete the declared project profile before running it')
+            else:
+                browser_checks(args, budget, report, out)
     except Exception as exc:
         gate(report, 'validator_execution', 'failed', {'type': type(exc).__name__, 'message': str(exc)})
     report['automatedStatus'] = aggregate(report['gates'])
-    if report['automatedStatus'] == 'failed':
+    if not args.focus and report['automatedStatus'] == 'failed':
         report['releaseStatus'] = 'failed'
-    path = out / 'report.json'
-    path.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + '\n')
+    path = out / ('focused-report.json' if args.focus else 'report.json')
+    serialized = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + '\n'
+    path.write_text(serialized)
+    if args.focus:
+        # Readers of the latest summary always see a complete run; concurrent
+        # processes still print their own immutable report path.
+        with tempfile.NamedTemporaryFile(mode='w', dir=out.parent, delete=False) as copy:
+            copy.write(serialized)
+        Path(copy.name).replace(out.parent / path.name)
     counts = {status: sum(g['status'] == status for g in report['gates'])
               for status in ['passed', 'failed', 'unverified']}
     print(json.dumps({'report': str(path), 'sha256': sha(path), 'automatedStatus': report['automatedStatus'],

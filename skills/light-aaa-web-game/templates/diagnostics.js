@@ -4,15 +4,20 @@
  * Seeded scenes control game simulation time, camera, random sources and exposure.
  */
 export function installGameDiagnostics(game) {
-  if (new URLSearchParams(location.search).get('test') !== '1') return;
-  window.__GAME_TEST__ = {
+  const query = new URLSearchParams(location.search);
+  if (query.get('test') !== '1') return;
+  let requestedScene = query.get('scene');
+  let sceneError = null;
+  const hooks = {
     version: 4,
-    get ready() { return game.isPlayable; }, // after required generation/compilation
-    get fatal() { return game.fatalError || null; },
+    handlesSceneQuery: true,
+    get ready() { return game.isPlayable && requestedScene === null; },
+    get fatal() { return game.fatalError || sceneError || null; },
     async setScene(id) {
-      // Implement the views in budgets.requiredScenes, including the representative
-      // workload in benchmarkScene. Fix seed, camera, quality and internal resolution.
+      // select() resolves only after the registered fixture is ready for real input.
+      // Restore the starting state, clear old effects/input, and reject unknown IDs.
       await game.testScenes.select(id);
+      if (game.testScenes.current !== id) throw new Error('Scene did not load: ' + id);
     },
     metrics() {
       // Cached counters. No synchronous GPU readback here.
@@ -48,6 +53,9 @@ export function installGameDiagnostics(game) {
       // Expose the observable state needed to verify a real move and its outcome.
       return game.snapshotForTests();
     },
+    // Optional for Web Audio recording: expose the actual mix node AFTER the
+    // master volume/mute chain, already connected to the speaker destination.
+    // audioOutput() { return game.audio.masterOutput; },
     feedbackObservations() {
       // Correlate real inputs with independent reads of the player-facing output.
       // actions: [{id:'turn-1', condition:'first_choice', acceptedAtMs:100}]
@@ -64,4 +72,18 @@ export function installGameDiagnostics(game) {
       return game.resourceRegistry.counts();
     }
   };
+  window.__GAME_TEST__ = hooks;
+  if (requestedScene !== null) {
+    function enterWhenPlayable() {
+      if (game.fatalError) return;
+      if (!game.isPlayable) {
+        requestAnimationFrame(enterWhenPlayable);
+        return;
+      }
+      hooks.setScene(requestedScene)
+        .catch(error => { sceneError = String(error); })
+        .finally(() => { requestedScene = null; });
+    }
+    enterWhenPlayable();
+  }
 }
