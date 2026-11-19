@@ -9,6 +9,10 @@
 | Skill | 用途 |
 | --- | --- |
 | [light-aaa-web-game](skills/light-aaa-web-game/) | 按玩法生成轻量高画质 Web 游戏，使用程序化资产、单 HTML 和零额外网络请求，按核心操作和真实场景验收。 |
+| [vintage-travel-gouache-reference](skills/image-generation/vintage-travel-gouache-reference/) | **生图 · v1.1 参考图版**：借助附带的《海边度假》风格参考图，复刻复古旅行海报水粉画风，默认允许适度扩景。 |
+| [vintage-travel-gouache-text-only](skills/image-generation/vintage-travel-gouache-text-only/) | **生图 · v2.0 纯文字版**：不依赖额外参考图，以文字规范锁定精致复古旅行海报画风，特别控制天空笔触强度。 |
+
+生图 Skill 统一收录在 [`skills/image-generation/`](skills/image-generation/)，两个版本可独立安装或并存，名称互不冲突。
 
 ## 安装与使用
 
@@ -39,6 +43,13 @@ cp -R skills/light-aaa-web-game /path/to/project/.claude/skills/
 
 > 使用 light-aaa-web-game，制作一款海岛滑翔竞速游戏，玩家穿过风门完成计时，并能再次挑战。严格遵循 skill 的设计、实现、体验迭代和验收流程，交付单 HTML、源码与验收报告，并如实标注未验证项。
 
+生图 Skill 安装示例（Codex 项目级）：
+
+```bash
+cp -R skills/image-generation/vintage-travel-gouache-reference /path/to/project/.agents/skills/
+cp -R skills/image-generation/vintage-travel-gouache-text-only /path/to/project/.agents/skills/
+```
+
 ## 验证
 
 当前 skill 的验证器要求 Python 3.10+；资源审计自测使用 Node.js 20+。
@@ -55,7 +66,7 @@ node scripts/self_test_resources.mjs
 
 ## 添加其他 skill
 
-1. 新建 `skills/<skill-name>/` 并提供 `SKILL.md`。
+1. 新建 `skills/<skill-name>/` 并提供 `SKILL.md`。生图相关 Skill 使用 `skills/image-generation/<skill-name>/` 分类目录。
 2. 明确适用场景、输入、执行流程、交付物和验收标准。
 3. 将参考资料、模板和脚本随 skill 一起保存，使用相对路径引用。
 4. 更新上方技能目录，并保留版本变更与实际验证记录。
