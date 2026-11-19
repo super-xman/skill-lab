@@ -10,18 +10,25 @@
 ## 示例图
 两种风格的海滨与荒漠实际输出均分别嵌入各自的 README，见上述目录链接。所有示例图仅用于**展示与比较**，在执行 Skill 时**不可自动加载为风格参考图**。
 
-## 共通原则
+## 两种复古海报技能的共通原则
 - 保留目标图的核心主体、人物/建筑特征、重要姿态和场景关系。
 - 默认允许 L1 适度扩景；用户要求原样保留则使用 L0；明确授权自由发挥时使用 L2。
 - 默认沿用目标图画幅，多张目标图分别生成，除非用户要求拼贴。
 - 不引入无依据标题、Logo、巨型太阳、邮轮、灯塔或其他不相关主题物。
 - 生成质量取决于具体图像模型；两套 Skill 只规定提示词与验收流程。
 
+## 单图扩成 8K 全景
+
+用一张照片或插画生成 360° × 180° 全景。技能将原图主体投回球面，分区补绘四周，可导出带 GPano 元数据的 JPEG 和支持手机拖动、双指缩放的网页。[技能入口](image-to-8k-panorama/SKILL.md) · [补画提示词](image-to-8k-panorama/references/painting.md)
+
+首版用海港作品的 11 张补画重新合成了 8192 × 4096 全景，并在手机模拟器上验证了拖动、双指缩放和最高级切片加载。[运行与验收方法](image-to-8k-panorama/references/runbook.md)
+
 ## Codex 项目级安装
 
 ```bash
 cp -R skills/image-generation/vintage-travel-gouache-painterly /path/to/project/.agents/skills/
 cp -R skills/image-generation/vintage-travel-gouache-refined /path/to/project/.agents/skills/
+cp -R skills/image-generation/image-to-8k-panorama /path/to/project/.agents/skills/
 ```
 
 例如：“使用 `vintage-travel-gouache-painterly` 转绘这张照片，保留主体并适度扩景”；或“使用 `vintage-travel-gouache-refined`，让天空保持平滑轻薄”。

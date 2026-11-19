@@ -1,0 +1,4 @@
+interface:
+  display_name: "单图生成 8K 全景"
+  short_description: "保留原图主体和画风，分区补绘整圈并生成手机可拖动的高细节球面全景"
+  default_prompt: "用 $image-to-8k-panorama 把这张图扩成 8K 360° 全景，保留指定主体和画风。"

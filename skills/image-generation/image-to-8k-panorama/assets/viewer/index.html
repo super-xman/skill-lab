@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{TITLE}}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./vendor/pannellum.css">
+  <style>
+    html, body, #panorama { height: 100%; margin: 0; }
+    body { background: #19333c; color: white; font: 14px system-ui, sans-serif; }
+    #panorama { touch-action: none; }
+    #help, #status { position: absolute; left: 50%; transform: translateX(-50%);
+      padding: .55em 1em; background: #10232bd9; border-radius: .5em; text-align: center; }
+    #help { bottom: max(.7rem, env(safe-area-inset-bottom)); pointer-events: none; white-space: nowrap; }
+    #status { top: 42%; }
+    #status a, noscript a { color: white; }
+    noscript { position: absolute; inset: 45% 0 auto; text-align: center; }
+  </style>
+</head>
+<body>
+  <main id="panorama" aria-label="{{TITLE}}，可拖动的全景" aria-describedby="help"></main>
+  <p id="help">拖动环顾 · 双指或滚轮缩放</p>
+  <p id="status" role="status" hidden>全景加载失败。<a href="./panorama.jpg">打开全景图</a></p>
+  <noscript><a href="./panorama.jpg">打开全景图</a></noscript>
+  <script src="./vendor/pannellum.js"></script>
+  <script>
+    const statusBox = document.querySelector('#status');
+    function showError() { statusBox.hidden = false; }
+    try {
+      const camera = new URLSearchParams(location.search);
+      function angle(key, fallback, min, max) {
+        if (!camera.has(key)) return fallback;
+        const n = Number(camera.get(key));
+        return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+      }
+      const viewer = pannellum.viewer('panorama', {
+        type: 'multires', multiRes: {{MULTIRES}},
+        autoLoad: true, orientationOnByDefault: false,
+        yaw: angle('yaw', 0, -180, 180), pitch: angle('pitch', 0, -90, 90),
+        hfov: angle('hfov', matchMedia('(orientation: portrait)').matches ? 72 : 95, 28, 118),
+        minHfov: 28, maxHfov: 118, multiResMinHfov: true,
+        strings: {loadingLabel: '正在展开全景…', zoomIn: '放大', zoomOut: '缩小', toggleFullscreen: '全屏'}
+      });
+      viewer.on('error', showError);
+    } catch { showError(); }
+  </script>
+</body>
+</html>

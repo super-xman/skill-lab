@@ -11,6 +11,7 @@
 | [light-aaa-web-game](skills/light-aaa-web-game/) | 按玩法生成轻量高画质 Web 游戏，使用程序化资产、单 HTML 和零额外网络请求，按核心操作和真实场景验收。 |
 | [vintage-travel-gouache-painterly](skills/image-generation/vintage-travel-gouache-painterly/) | **生图 · 油画涂抹感**：无需参考图，笔触更明显、更具手绘运动感，含海滨/荒漠示例。 |
 | [vintage-travel-gouache-refined](skills/image-generation/vintage-travel-gouache-refined/) | **生图 · 精致轻纹理**：无需参考图，天空轻薄平滑，局部保留精细短笔触，含海滨/荒漠示例。 |
+| [image-to-8k-panorama](skills/image-generation/image-to-8k-panorama/SKILL.md) | 将单张照片或插画扩成 8192 × 4096 球面全景，保留原图主体，分区补绘细节，可导出手机拖动查看器。 |
 
 生图 Skill 统一收录在 [`skills/image-generation/`](skills/image-generation/)，两种不同笔触取向的 Skill 可独立安装或并存，均只使用文字风格规范，名称互不冲突。
 
@@ -52,7 +53,7 @@ cp -R skills/image-generation/vintage-travel-gouache-refined /path/to/project/.a
 
 ## 验证
 
-当前 skill 的验证器要求 Python 3.10+；资源审计自测使用 Node.js 20+。
+Web 游戏技能的验证器要求 Python 3.10+，资源审计自测使用 Node.js 20+。8K 全景技能的脚本使用 Python 3.11+。
 
 ```bash
 cd skills/light-aaa-web-game
