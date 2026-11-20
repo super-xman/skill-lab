@@ -1,0 +1,98 @@
+/* Seaside v20 glass rail and v17 selection. The shader shares the CSS tint. */
+.lg-surface {
+  --lg-tint-rgb: 226 235 241;
+  --lg-opacity: .10;
+  --lg-ink: #fff;
+  --lg-solid: #34424c;
+  --lg-selection: rgb(24 15 11 / .23);
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--lg-radius, 24px);
+  color: var(--lg-ink);
+  background: var(--lg-solid);
+  text-shadow: none;
+  box-shadow: 0 3px 9px #16232d24;
+}
+.lg-surface.lg-pill { --lg-radius: 999px; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg-surface {
+    background: rgb(var(--lg-tint-rgb) / var(--lg-opacity));
+    -webkit-backdrop-filter: saturate(108%) brightness(.89) blur(1.25px);
+    backdrop-filter: saturate(108%) brightness(.89) blur(1.25px);
+  }
+}
+.lg-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(to bottom, #fff3, transparent 16%, transparent 88%, #fff9ed20);
+  box-shadow: inset 0 1px 1px #f8fdff9c, inset 0 -1px 1px #fff6dda3,
+    inset 1px 0 1px #12212755, inset -1px 0 1px #12212755;
+}
+.lg-surface[data-lg-rendered] {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 1px 2px #16232d20, 0 4px 10px #16232d21;
+}
+.lg-surface[data-lg-rendered]::before { display: none; }
+.lg-glass-pixels { display: none; position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; max-width: none; }
+.lg-surface[data-lg-rendered] > .lg-glass-pixels { display: block; }
+.lg-surface :is(button, input, select, a):focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+:is(button, a).lg-surface:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  :is(button, a).lg-surface:not([data-lg-rendered]) { transition: scale .15s ease-out; }
+  :is(button, a).lg-surface:not([data-lg-rendered]):active { scale: .97; }
+}
+
+.lg-segments {
+  --lg-radius: 999px;
+  display: inline-flex;
+  align-items: stretch;
+  max-inline-size: 100%;
+  padding: 4px;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lg-choice {
+  position: relative; z-index: 1;
+  display: flex; flex: 1 1 auto; min-width: 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.lg-choice > input {
+  position: absolute; width: 1px; height: 1px; margin: 0; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.lg-choice > span {
+  box-sizing: border-box;
+  display: inline-flex; flex: 1; gap: .4em; align-items: center; justify-content: center;
+  min-block-size: 44px; padding: .35em clamp(.55em, 2.5vw, 1.1em);
+  border-radius: inherit; color: inherit; text-shadow: none; text-align: center;
+}
+.lg-choice, .lg-thumb { border-radius: inherit; }
+.lg-choice > span > svg { width: 1.2em; height: 1.2em; flex: none; }
+.lg-segments.lg-stack .lg-choice > span { flex-direction: column; gap: .15em; }
+.lg-choice > input:focus-visible + span { outline: 2px solid currentColor; outline-offset: -3px; }
+.lg-choice > input:disabled + span { opacity: .5; cursor: default; }
+.lg-segments:not([data-lg-segments]) .lg-choice > input:checked + span,
+.lg-thumb { background: var(--lg-selection); box-shadow: inset 0 1px 2px #fff1, inset 0 -1px 2px #17100c14; }
+.lg-thumb { position: absolute; left: 0; z-index: 0; pointer-events: none; transform-origin: center; }
+.lg-thumb[hidden] { display: none; }
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .lg-surface, .lg-surface[data-lg-rendered] {
+    background: var(--lg-solid); -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .lg-surface::before, .lg-surface[data-lg-rendered] > .lg-glass-pixels { display: none; }
+}
+@media (forced-colors: active) {
+  .lg-surface, .lg-surface[data-lg-rendered] { color: CanvasText; background: Canvas; outline: 1px solid CanvasText; }
+  .lg-thumb { display: none; }
+  .lg-choice > input:checked + span { outline: 2px solid Highlight; outline-offset: -4px; }
+  .lg-choice > input:focus-visible + span { outline-style: dashed; }
+}

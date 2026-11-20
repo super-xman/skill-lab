@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#234b4e">
+  <title>色样台</title>
+  <link rel="stylesheet" href="./liquid-glass.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DM Sans", "PingFang SC", system-ui, sans-serif; color: #172b29; background: #234b4e; }
+    button { font: inherit; cursor: pointer; }
+    .workbench { position: relative; isolation: isolate; display: flex; flex-direction: column; min-height: max(100svh, 490px);
+      padding: max(20px, env(safe-area-inset-top)) clamp(18px, 5vw, 84px) max(16px, env(safe-area-inset-bottom)); }
+    #field { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; background: linear-gradient(125deg,#183e45,#6aab9f 55%,#eed9ac); }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .wordmark { font-size: 1.3rem; color: white; letter-spacing: .06em; }
+    .export { padding: .58em 1em; min-height: 44px; font-size: .9rem; }
+    .palette { width: min(100%, 305px); padding: 24px; margin: auto 0 clamp(28px, 5vh, 60px);
+      background: #f5f2e8; border-radius: 18px; box-shadow: 0 8px 30px #102c2d20; }
+    h1 { margin: 0 0 20px; font-family: "Songti SC", "STSong", Georgia, serif; font-size: clamp(2.2rem, 5vw, 3.5rem); line-height: 1; }
+    .values { display: flex; margin: 0; padding: 0; list-style: none; gap: 7px; }
+    .values li { flex: 1; min-width: 0; }
+    .values i { display: block; height: 26px; border-radius: 5px; background: var(--swatch); }
+    .values code { display: block; padding-top: 7px; font: 500 .76rem ui-monospace, monospace; }
+    .filters { align-self: center; inline-size: min(100%, 310px); min-height: clamp(54px, 15.15vw, 64px); font-weight: 600; font-size: .94rem; }
+    @media (max-height: 450px) and (orientation: landscape) {
+      .workbench { min-height: max(100svh, 290px); padding-block: 10px; }
+      .palette { margin-bottom: 10px; padding: 14px; }
+      h1 { margin-bottom: 10px; font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="workbench">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <header>
+      <strong class="wordmark">色样台</strong>
+      <button type="button" class="lg-surface lg-pill export">导出色卡</button>
+    </header>
+    <section class="palette" aria-labelledby="name">
+      <h1 id="name" aria-live="polite">青瓷</h1>
+      <ul class="values" aria-label="配色值">
+        <li><i style="--swatch:#123E4A"></i><code>#123E4A</code></li>
+        <li><i style="--swatch:#71B4AD"></i><code>#71B4AD</code></li>
+        <li><i style="--swatch:#EACB93"></i><code>#EACB93</code></li>
+      </ul>
+    </section>
+    <div class="lg-surface lg-segments filters" role="radiogroup" aria-label="选择配色">
+      <label class="lg-choice"><input type="radio" name="palette" value="celadon" checked><span>青瓷</span></label>
+      <label class="lg-choice"><input type="radio" name="palette" value="persimmon"><span>柿红</span></label>
+      <label class="lg-choice"><input type="radio" name="palette" value="iris"><span>鸢尾</span></label>
+    </div>
+  </main>
+  <script type="module">
+    import {mountGlassSegments} from './glass-segments.js';
+    import {mountGlassLens} from './liquid-lens.js';
+
+    const palettes = {
+      celadon:   {name:'青瓷', colors:['#123E4A','#71B4AD','#EACB93']},
+      persimmon: {name:'柿红', colors:['#582D37','#D97048','#F1CA82']},
+      iris:      {name:'鸢尾', colors:['#312947','#9689CB','#E6BBAB']}
+    };
+    let active = palettes.celadon;
+    const field = document.querySelector('#field'), painter = field.getContext('2d');
+    const group = document.querySelector('.filters');
+    mountGlassSegments(group);
+    function paintBackdrop(ctx) {
+      const box = field.getBoundingClientRect();
+      ctx.drawImage(field, box.left, box.top, box.width, box.height);
+    }
+    const lenses = [...document.querySelectorAll('.lg-surface')].map(surface => mountGlassLens(surface, paintBackdrop));
+
+    // These are the actual palette swatches, drawn once and shared by the stage and the lens.
+    function paint() {
+      const {width:w, height:h} = field.getBoundingClientRect();
+      if (!w || !h) return;
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      field.width = Math.round(w*dpr); field.height = Math.round(h*dpr);
+      painter.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const [dark,mid,light] = active.colors;
+      const background = painter.createLinearGradient(0,h,w,0);
+      background.addColorStop(0,dark); background.addColorStop(.52,mid); background.addColorStop(1,light);
+      painter.fillStyle = background; painter.fillRect(0,0,w,h);
+      const step = Math.max(w*.14, h*.13);
+      for (let i=-4; i<=8; i++) {
+        const x = w*.5+i*step;
+        const fold = painter.createLinearGradient(x-step*.70,h*.85,x+step*.45,h*.80);
+        fold.addColorStop(0,dark); fold.addColorStop(.72,mid); fold.addColorStop(1,light);
+        painter.globalAlpha = .81; painter.fillStyle = fold;
+        painter.beginPath(); painter.moveTo(x+w*.44,-h*.1);
+        painter.bezierCurveTo(x+w*.8,h*.35,x-w*.26,h*.72,x,h*1.08);
+        painter.lineTo(x+step*.75,h*1.08);
+        painter.bezierCurveTo(x-w*.12,h*.64,x+w*.94,h*.42,x+w*.54,-h*.1);
+        painter.closePath(); painter.fill();
+      }
+      painter.globalAlpha = 1;
+      // The scene and both lenses share the same visible top and bottom vignettes.
+      const shade = painter.createLinearGradient(0, Math.min(70, h*.14), 0, h - Math.min(78, h*.16));
+      shade.addColorStop(0,'rgba(17,34,40,.59)');
+      shade.addColorStop(.23,'rgba(17,34,40,0)');
+      shade.addColorStop(.76,'rgba(11,34,41,0)');
+      shade.addColorStop(1,'rgba(11,34,41,.54)');
+      painter.fillStyle = shade; painter.fillRect(0,0,w,h);
+      for (const lens of lenses) lens.render();
+    }
+    group.addEventListener('change', event => {
+      active = palettes[event.target.value];
+      document.querySelector('#name').textContent = active.name;
+      document.querySelectorAll('.values li').forEach((li,i) => {
+        li.querySelector('i').style.setProperty('--swatch',active.colors[i]);
+        li.querySelector('code').textContent = active.colors[i];
+      });
+      paint();
+    });
+    document.querySelector('.export').addEventListener('click', () => {
+      const url = URL.createObjectURL(new Blob([JSON.stringify(active,null,2)], {type:'application/json'}));
+      const link = document.createElement('a');
+      link.href = url; link.download = active.name + '.json'; document.body.append(link);
+      link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url),1500);
+    });
+    new ResizeObserver(paint).observe(field);
+    paint();
+  </script>
+</body>
+</html>
