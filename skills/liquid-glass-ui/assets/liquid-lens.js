@@ -39,15 +39,12 @@ function createGlassRenderer(canvas) {
       float roll = 1. - smoothstep(0., bevel, d);
       float angle = 1.30 * roll;
       vec3 surface = vec3(normal * sin(angle), cos(angle));
-      vec3 ray = refract(vec3(0., 0., -1.), surface, 1. / 1.46);
-      // Trace from the rounded surface into the full-resolution backdrop. Offset is
-      // measured in CSS pixels so the bevel has the same thickness on a Retina screen.
-      vec2 bend = ray.xy / -ray.z * (curvatureRadius * .405);
-      vec2 at = sceneUV + bend / cropSize;
-      vec2 dispersion = bend * .060 / cropSize;
-      vec3 detail = vec3(texture2D(scene, at - dispersion).r,
-                         texture2D(scene, at).g,
-                         texture2D(scene, at + dispersion).b);
+      // Gently magnify the live image and concentrate the bend at the outer edge.
+      float edge = 1. - smoothstep(0., railSize.y * .18, d);
+      float bend = railSize.y * 1.25 * (.067 * edge + .205 * pow(edge, 10.));
+      vec2 mapped = .5 + (p / 1.03 + normal * bend) / cropSize;
+      vec2 at = clamp(mapped, sampleBounds.xy, sampleBounds.zw);
+      vec3 detail = texture2D(scene, at).rgb;
       vec3 diffuse = texture2D(diffuseScene, at).rgb;
       vec3 color = mix(detail, diffuse, mix(.15, .085, roll));
       color = mix(vec3(dot(color, luma)), color, 1.08);
@@ -181,8 +178,6 @@ export function mountGlassLens(surface, paintBackdrop) {
   const solid = matchMedia('(prefers-reduced-transparency: reduce), (forced-colors: active)');
   const events = new AbortController();
   const options = {signal: events.signal};
-  // Match the approved rail's sampling window, including its downsampled highlight texture.
-  const pad = 44;
   let renderer, frame = 0, blocked = false, lost = false, disposed = false;
   surface.prepend(canvas);
 
@@ -200,6 +195,9 @@ export function mountGlassLens(surface, paintBackdrop) {
     }
     renderer ??= createGlassRenderer(canvas);
     if (!renderer) { blocked = true; return false; }
+    // The reference rails use 44px. Taller surfaces need up to 0.34 heights for
+    // refraction and just under 0.40 for the outer highlight, plus a pixel of padding.
+    const pad = Math.max(44, Math.ceil(box.height * .40) + 1);
     const w = box.width + 2 * pad, h = box.height + 2 * pad;
     const dpr = Math.min(devicePixelRatio || 1, 2, Math.sqrt(1200000 / (w * h)), renderer.maxSize / Math.max(w, h));
     const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));

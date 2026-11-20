@@ -1,4 +1,4 @@
-/* Seaside v20 glass rail and v17 selection. The shader shares the CSS tint. */
+/* Seaside v29 glass surfaces and v17 selection. The shader shares the CSS tint. */
 .lg-surface {
   --lg-tint-rgb: 226 235 241;
   --lg-opacity: .10;

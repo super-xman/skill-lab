@@ -1,4 +1,4 @@
 interface:
   display_name: "液态玻璃网页 UI"
-  short_description: "复用海港定稿的清透折射底栏、环境高光和按压回弹滑块生成网页"
-  default_prompt: "用 $liquid-glass-ui 生成我描述的页面，沿用海港已确认的底栏折射和滑块动效。"
+  short_description: "生成共用海港边缘折射与环境高光的底栏、工具条和回弹滑块"
+  default_prompt: "用 $liquid-glass-ui 生成我描述的页面，让底栏和工具条使用海港定稿的折射材质，分段选择使用按压回弹滑块。"
