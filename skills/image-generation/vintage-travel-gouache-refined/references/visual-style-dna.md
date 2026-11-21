@@ -7,7 +7,7 @@
 - **Mid-century painted travel poster / 复古旅行宣传画**：20 世纪中期欧美观光商业海报的优雅构图、浪漫怀旧气息，明快但克制。
 - **Refined editorial illustration / 精致商业编辑插画**：主体形状可读、建筑结构准确、有控制的细节层次，不是稚拙卡通。
 - **Opaque matte gouache / 不透明哑光水粉**：有覆盖感的颜色层、平整的大色面、轻柔的画笔边缘。
-- **Selective local brushwork / 局部笔触**：水浪、树木、岩石局部可以厚一些，但天空底色非常细腻，画面不能均匀刮出一层油彩。
+- **Selective local brushwork / 局部笔触**沿着浪脊、枝叶或岩石转折变化，表现材质和形体。
 - **Fine print-like pigment grain / 细微印刷式颜料颗粒**：只有放大时才容易看到，不应像旧纸破损、涂鸦噪点。
 - **Warm-cool color balance / 柔和冷暖对比**：暖金光与灰蓝阴影，色彩有年代感，不荧光不过饱和。
 
@@ -24,11 +24,11 @@
 
 以下说法容易让生成器把整幅画变成粗重油画，**不要作为主风格正面指令**：
 
-- `heavy oil painting`, `thick impasto everywhere`, `heavy palette knife texture`, `Van Gogh brush strokes`, `expressionist paint`, `rough canvas scratch marks`, `intense canvas grain`, `highly textured sky`, `swirling painterly sky`。
+- `heavy oil painting`, `thick impasto everywhere`, `heavy palette knife texture`, `Van Gogh brush strokes`, `expressionist paint`, `rough canvas scratch marks`, `intense canvas grain`。
 
 与其写“强烈油画厚涂”，不如写：
 
-> **Refined mid-century travel poster painted in opaque matte gouache, with crisp illustrative forms, subtle print-like grain, smooth open sky and material-specific localized brushwork.**
+> **Refined mid-century travel poster painted in opaque matte gouache, with crisp illustrative forms, subtle print-like grain and brushwork shaped by each material.**
 
 ## 风格与内容的边界
 

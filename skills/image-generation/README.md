@@ -2,10 +2,10 @@
 
 本分类存放图像生成、图生图与插画风格相关的 Agent Skills。每个子目录均可独立安装。当前两种复古旅行海报风格都**只靠文字规范**，不需要额外风格参考图。
 
-| Skill | 画面风格 | 天空笔触 | 适合用户 |
+| Skill | 画面风格 | 笔触特点 | 适合用户 |
 | --- | --- | --- | --- |
 | [`vintage-travel-gouache-painterly`](vintage-travel-gouache-painterly/) | 明显油画式颜料扫涂、不透明水粉与复古海报 | 可见的有节奏涂抹 | 喜欢更强烈手绘肌理、云朵和山石更有运动感 |
-| [`vintage-travel-gouache-refined`](vintage-travel-gouache-refined/) | 精致哑光水粉、清晰复古商业插画 | 近乎平滑，只有低对比微颗粒 | 喜欢天空安静、笔触因材质分区、整体更克制 |
+| [`vintage-travel-gouache-refined`](vintage-travel-gouache-refined/) | 精致哑光水粉、清晰复古商业插画 | 水纹、山石和枝叶各有笔触 | 喜欢轮廓清晰、光色协调的商业旅行插画 |
 
 ## 示例图
 两种风格的海滨与荒漠实际输出均分别嵌入各自的 README，见上述目录链接。所有示例图仅用于**展示与比较**，在执行 Skill 时**不可自动加载为风格参考图**。
@@ -31,4 +31,4 @@ cp -R skills/image-generation/vintage-travel-gouache-refined /path/to/project/.a
 cp -R skills/image-generation/image-to-8k-panorama /path/to/project/.agents/skills/
 ```
 
-例如：“使用 `vintage-travel-gouache-painterly` 转绘这张照片，保留主体并适度扩景”；或“使用 `vintage-travel-gouache-refined`，让天空保持平滑轻薄”。
+可以说“使用 `vintage-travel-gouache-painterly` 转绘这张照片，保留主体并适度扩景”，或“使用 `vintage-travel-gouache-refined`，把这张照片画成精致的哑光水粉旅行插画”。
